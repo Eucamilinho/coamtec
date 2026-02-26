@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="100%" height="100%" shape-rendering="crispEdges">
+  <path fill="#40A4DF" opacity="0.4">
+    <animate attributeName="d" 
+             values="M4 14h8v1H4z; M3 14h10v1H3z; M4 14h8v1H4z" 
+             dur="1.5s" repeatCount="indefinite" />
+  </path>
+
+  <g>
+    <animateTransform attributeName="transform" type="translate" 
+                      values="0,0; 0,-1.5; 0,0" 
+                      dur="1.5s" repeatCount="indefinite" />
+
+    <path fill="#FFCC00" d="M5 2h4v1H5z M4 3h6v1H4z M4 4h3v1H4z M8 4h2v1H8z M4 5h6v1H4z M5 6h4v1H5z M6 7h3v1H6z M6 8h2v1H6z M2 9h9v1H2z M1 10h11v1H1z M1 11h12v1H1z M2 12h11v1H2z M3 13h9v1H3z" />
+
+    <path fill="#FF8C00" d="M10 5h2v1h-2z M9 6h2v1H9z" />
+
+    <path fill="#222222" d="M7 4h1v1H7z">
+      <animate attributeName="d" 
+               values="M7 4h1v1H7z; M7 4.5h1v0.2H7z; M7 4h1v1H7z; M7 4h1v1H7z" 
+               keyTimes="0; 0.02; 0.04; 1" 
+               dur="3s" repeatCount="indefinite" />
+    </path>
+  </g>
+</svg>

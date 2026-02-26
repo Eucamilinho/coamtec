@@ -17,17 +17,22 @@ import {
   AlertTriangle,
   Box,
   Tag,
+  X,
 } from "lucide-react";
+
+import { eliminarImagenStorage } from "../lib/supabase"
 
 const productoVacio = {
   nombre: "",
   precio: "",
   descuento: 0,
   descripcion: "",
-  imagen: "https://placehold.co/300x200",
+  imagen: "",
+  imagenes: [],
   categoria: "",
   stock: "",
-};
+  video_tiktok: "",
+}
 
 export default function Admin() {
   const {
@@ -105,6 +110,61 @@ export default function Admin() {
     setFormulario({ ...formulario, imagen: data.publicUrl });
     setSubiendoImagen(false);
   };
+
+  const handleImagenAdicional = async (e, indice) => {
+    const archivo = e.target.files[0];
+    if (!archivo) return;
+
+    setSubiendoImagen(true);
+    const extension = archivo.name.split(".").pop();
+    const nombreArchivo = `${Date.now()}-${indice}.${extension}`;
+
+    const { error } = await supabase.storage
+      .from("productos")
+      .upload(nombreArchivo, archivo);
+
+    if (error) {
+      setSubiendoImagen(false);
+      return;
+    }
+
+    const { data } = supabase.storage
+      .from("productos")
+      .getPublicUrl(nombreArchivo);
+
+    const nuevasImagenes = [...(formulario.imagenes || [])];
+    nuevasImagenes[indice] = data.publicUrl;
+
+    const actualizado = {
+      ...formulario,
+      imagenes: nuevasImagenes,
+    };
+
+    // La primera imagen es la portada
+    if (indice === 0) {
+      actualizado.imagen = data.publicUrl;
+      setPreview(data.publicUrl);
+    }
+
+    setFormulario(actualizado);
+    setSubiendoImagen(false);
+  };
+
+  const eliminarImagenAdicional = async (indice) => {
+  const url = formulario.imagenes[indice]
+  await eliminarImagenStorage(url)
+
+  const nuevasImagenes = formulario.imagenes.filter((_, i) => i !== indice)
+  const actualizado = { ...formulario, imagenes: nuevasImagenes }
+
+  // Si se elimina la portada actualiza imagen principal
+  if (indice === 0) {
+    actualizado.imagen = nuevasImagenes[0] || ""
+    setPreview(nuevasImagenes[0] || null)
+  }
+
+  setFormulario(actualizado)
+}
 
   const handleSubmit = async () => {
     if (!formulario.nombre || !formulario.precio) return;
@@ -466,43 +526,64 @@ export default function Admin() {
 
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex flex-col gap-4">
               {/* Imagen */}
+              {/* Imágenes del producto */}
               <div className="flex flex-col gap-2">
                 <label className="text-zinc-400 text-sm font-medium">
-                  Imagen
+                  Imágenes del producto (la primera será la portada)
                 </label>
-                <div className="flex gap-4 items-center">
-                  <div className="w-24 h-24 bg-zinc-800 border border-zinc-700 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0">
-                    {preview ? (
-                      <img
-                        src={preview}
-                        alt="preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-zinc-600 text-3xl">📷</span>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2 flex-1">
-                    <label className="bg-zinc-800 border border-zinc-700 hover:border-green-400 text-zinc-300 px-4 py-2 rounded-lg text-sm cursor-pointer transition flex items-center justify-center gap-2">
-                      <Upload size={14} />
-                      {subiendoImagen ? "Subiendo..." : "Seleccionar imagen"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImagen}
-                        className="hidden"
-                        disabled={subiendoImagen}
-                      />
-                    </label>
-                    <input
-                      name="imagen"
-                      value={formulario.imagen}
-                      onChange={handleChange}
-                      placeholder="O pega una URL"
-                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-green-400"
-                    />
-                  </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[0, 1, 2].map((indice) => (
+                    <div key={indice} className="relative">
+                      {formulario.imagenes?.[indice] ? (
+                        <div className="relative aspect-square">
+                          {indice === 0 && (
+                            <span className="absolute -top-2 -left-2 bg-green-400 text-black text-xs font-black px-2 py-0.5 rounded-full z-10">
+                              Portada
+                            </span>
+                          )}
+                          <img
+                            src={formulario.imagenes[indice]}
+                            alt={`imagen ${indice + 1}`}
+                            className="w-full h-full object-cover rounded-xl border-2 border-zinc-700"
+                          />
+                          <button
+                            onClick={() => eliminarImagenAdicional(indice)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition"
+                          >
+                            <X size={12} className="text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label
+                          className={`aspect-square flex flex-col items-center justify-center bg-zinc-800 border-2 border-dashed rounded-xl transition ${
+                            (formulario.imagenes || []).length >= indice
+                              ? "border-zinc-600 hover:border-green-400 cursor-pointer"
+                              : "border-zinc-800 opacity-40 cursor-not-allowed"
+                          }`}
+                        >
+                          <Plus size={20} className="text-zinc-500" />
+                          <span className="text-zinc-500 text-xs mt-1">
+                            {indice === 0 ? "Portada" : `Foto ${indice + 1}`}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImagenAdicional(e, indice)}
+                            className="hidden"
+                            disabled={
+                              subiendoImagen ||
+                              (formulario.imagenes || []).length < indice
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+                  ))}
                 </div>
+                <p className="text-zinc-600 text-xs">
+                  Sube hasta 3 fotos. La primera aparecerá como imagen
+                  principal.
+                </p>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -589,6 +670,18 @@ export default function Admin() {
                   className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
                   rows={4}
                 />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-zinc-400 text-sm font-medium">Video TikTok (opcional)</label>
+                <input
+                  name="video_tiktok"
+                  value={formulario.video_tiktok || ""}
+                  onChange={handleChange}
+                  placeholder="https://www.tiktok.com/@usuario/video/123456"
+                  className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
+                />
+                <p className="text-zinc-600 text-xs">Pega la URL del video de TikTok de tu producto</p>
               </div>
 
               <div className="flex gap-3 pt-2">
