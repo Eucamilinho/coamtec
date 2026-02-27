@@ -10,9 +10,17 @@ function ResultadoContenido() {
   const { vaciarCarrito } = useCarrito()
   const searchParams = useSearchParams()
   const status = searchParams.get("status")
+  const paymentId = searchParams.get("payment_id")
+  const preferenceId = searchParams.get("preference_id")
 
   useEffect(() => {
-    if (status === "success") {
+    if (status === "approved" && preferenceId) {
+      // Actualizar estado del pedido en Supabase
+      fetch("/api/actualizar-pedido", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferenceId, status }),
+      })
       vaciarCarrito()
     }
   }, [status])
