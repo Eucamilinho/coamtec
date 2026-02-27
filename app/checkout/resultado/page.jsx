@@ -25,6 +25,17 @@ function ResultadoContenido() {
     }
   }, [status])
 
+  useEffect(() => {
+    // Ver todos los parámetros que llegan
+    console.log("Params:", {
+      status,
+      paymentId,
+      preferenceId,
+      externalReference,
+      fullUrl: window.location.href
+    })
+  }, [])
+
   const config = {
     success: {
       icon: <CheckCircle size={64} className="text-green-400" />,
