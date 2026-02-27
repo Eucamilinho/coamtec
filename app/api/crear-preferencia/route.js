@@ -36,9 +36,9 @@ export async function POST(request) {
           },
         },
         back_urls: {
-  success: `http://localhost:3000/checkout/resultado?status=success`,
-  failure: `http://localhost:3000/checkout/resultado?status=failure`,
-  pending: `http://localhost:3000/checkout/resultado?status=pending`,
+  success: `https://coamtec.vercel.app/checkout/resultado?status=success`,
+  failure: `https://coamtec.vercel.app/checkout/resultado?status=failure`,
+  pending: `https://coamtec.vercel.app/checkout/resultado?status=pending`,
 },
         // auto_return: "approved",
         shipments: {
