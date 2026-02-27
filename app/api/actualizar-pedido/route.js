@@ -15,6 +15,7 @@ export async function POST(request) {
       status === "rejected" || status === "failure" ? "rechazado" :
       "pendiente"
 
+    // Actualizar estado del pedido
     const { data, error } = await supabase
       .from("pedidos")
       .update({
@@ -24,9 +25,30 @@ export async function POST(request) {
       .eq("mp_payment_id", preferenceId)
       .select()
 
-    console.log("Resultado:", data, error)
-
     if (error) throw error
+
+    // Si fue pagado, restar stock de cada producto
+    if (estado === "pagado" && data?.[0]?.items) {
+      const items = data[0].items
+      for (const item of items) {
+        // Obtener stock actual
+        const { data: producto } = await supabase
+          .from("productos")
+          .select("stock")
+          .eq("id", item.id)
+          .single()
+
+        if (producto) {
+          const nuevoStock = Math.max(0, producto.stock - item.cantidad)
+          await supabase
+            .from("productos")
+            .update({ stock: nuevoStock })
+            .eq("id", item.id)
+        }
+      }
+    }
+
+    console.log("Resultado:", data, error)
     return Response.json({ ok: true, data })
   } catch (error) {
     console.error("Error:", error)
