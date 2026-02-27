@@ -12,6 +12,8 @@ function ResultadoContenido() {
   const status = searchParams.get("status")
   const paymentId = searchParams.get("payment_id")
   const preferenceId = searchParams.get("preference_id")
+  const externalReference = searchParams.get("external_reference")
+
 
   useEffect(() => {
     if (status === "approved" && preferenceId) {
