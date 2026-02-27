@@ -171,13 +171,20 @@ export default function Productos() {
                       ⚡ Últimas
                     </span>
                   )}
-                  <div className="overflow-hidden rounded-xl">
-                    <img
-                      src={producto.imagen}
-                      alt={producto.nombre}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition duration-500"
-                    />
-                  </div>
+                  <div className="relative overflow-hidden rounded-xl">
+  {producto.stock === 0 && (
+    <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center z-20">
+      <span className="bg-zinc-900 border border-zinc-700 text-zinc-400 font-black px-4 py-2 rounded-full text-sm">
+        Agotado
+      </span>
+    </div>
+  )}
+  <img
+    src={producto.imagen}
+    alt={producto.nombre}
+    className="w-full h-48 object-cover group-hover:scale-105 transition duration-500"
+  />
+</div>
                   <span className="text-xs text-green-400 font-mono">{producto.categoria}</span>
                   <Link href={`/productos/${producto.id}`}>
                     <h2 className="text-zinc-800 dark:text-zinc-100 font-semibold hover:text-green-400 transition leading-tight">
@@ -215,13 +222,20 @@ export default function Productos() {
                   key={producto.id}
                   className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex gap-6 items-center hover:border-green-400/50 transition group"
                 >
-                  <div className="w-28 h-28 flex-shrink-0 overflow-hidden rounded-xl">
-                    <img
-                      src={producto.imagen}
-                      alt={producto.nombre}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    />
-                  </div>
+                  <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded-xl">
+  {producto.stock === 0 && (
+    <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center z-20">
+      <span className="bg-zinc-900 border border-zinc-700 text-zinc-400 font-black px-3 py-1 rounded-full text-xs">
+        Agotado
+      </span>
+    </div>
+  )}
+  <img
+    src={producto.imagen}
+    alt={producto.nombre}
+    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+  />
+</div>
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-green-400 font-mono">{producto.categoria}</span>
                     <Link href={`/productos/${producto.id}`}>
@@ -241,6 +255,11 @@ export default function Productos() {
                           -{producto.descuento}% descuento
                         </span>
                       )}
+                      {producto.stock === 0 && (
+  <span className="bg-zinc-800 text-zinc-400 text-xs px-2 py-1 rounded-full">
+    Agotado
+  </span>
+)}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-3 flex-shrink-0">

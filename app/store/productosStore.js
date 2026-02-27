@@ -6,15 +6,16 @@ export const useProductos = create((set) => ({
   cargando: false,
 
   cargarProductos: async () => {
-    set({ cargando: true })
-    const { data, error } = await supabase
-      .from("productos")
-      .select("*")
-      .order("created_at", { ascending: false })
-    if (error) console.error("Error cargando productos:", error)
-    else set({ productos: data })
-    set({ cargando: false })
-  },
+  set({ cargando: true })
+  const { data, error } = await supabase
+    .from("productos")
+    .select("*")
+    .order("created_at", { ascending: false })
+  if (error) console.error("Error cargando productos:", error)
+  else set({ productos: data })
+  set({ cargando: false })
+},
+
 
   agregarProducto: async (producto) => {
     const { data, error } = await supabase

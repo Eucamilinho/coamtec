@@ -99,11 +99,12 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
   const totalProductos = productos.length;
   const totalStock = productos.reduce((acc, p) => acc + Number(p.stock), 0);
   const productosConDescuento = productos.filter((p) => p.descuento > 0).length;
-  const stockBajo = productos.filter((p) => p.stock <= 3).length;
+  const stockBajo = productos.filter((p) => p.stock <= 3 && p.stock > 0).length  
   const valorInventario = productos.reduce(
     (acc, p) => acc + Number(p.precio) * Number(p.stock),
     0,
   );
+  const agotados = productos.filter((p) => p.stock === 0).length
 
   const handleChange = (e) => {
     setFormulario({ ...formulario, [e.target.name]: e.target.value });
@@ -319,6 +320,7 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                   icon: <AlertTriangle size={24} />,
                   color: "text-red-400",
                 },
+                { label: "Agotados", value: agotados, icon: <AlertTriangle size={24} />, color: "text-red-400" },
               ].map((stat) => (
                 <div
                   key={stat.label}
