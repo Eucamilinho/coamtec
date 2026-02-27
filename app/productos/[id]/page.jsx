@@ -6,6 +6,8 @@ import { useCarrito } from "../../store/carritoStore"
 import { useWishlist } from "../../store/wishlistStore"
 import Link from "next/link"
 import { ShoppingCart, Heart, Zap, Star, Shield, Truck, RotateCcw, Lock, ChevronRight, Minus, Plus, X, ChevronLeft, ZoomIn } from "lucide-react"
+import { useRouter } from "next/navigation"
+
 
 export default function DetalleProducto({ params }) {
   const { id } = use(params)
@@ -18,6 +20,7 @@ export default function DetalleProducto({ params }) {
   const [imagenActiva, setImagenActiva] = useState(0)
   const [modalAbierto, setModalAbierto] = useState(false)
   const enWishlist = wishlistItems.some((p) => p.id === producto?.id)
+  const router = useRouter()
 
   if (!producto) {
     return (
@@ -253,31 +256,54 @@ const todasLasImagenes = (producto.imagenes && producto.imagenes.length > 0)
             </div>
 
             <div className="flex flex-col gap-3">
-              <button
-                onClick={handleAgregar}
-                className={`w-full py-4 rounded-xl font-black text-lg transition flex items-center justify-center gap-2 ${
-                  agregado ? "bg-green-600 text-white" : "bg-green-400 text-black hover:bg-green-300"
-                }`}
-              >
-                <ShoppingCart size={20} />
-                {agregado ? "Agregado al carrito" : "Añadir al carrito"}
-              </button>
-              <button className="w-full py-4 rounded-xl font-bold text-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 transition flex items-center justify-center gap-2">
-                <Zap size={20} />
-                Comprar ahora
-              </button>
-              <button
-                onClick={() => toggleWishlist(producto)}
-                className={`w-full py-3 rounded-xl font-medium text-sm border transition flex items-center justify-center gap-2 ${
-                  enWishlist
-                    ? "border-green-400 text-green-400 hover:bg-green-400/10"
-                    : "border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300"
-                }`}
-              >
-                <Heart size={16} className={enWishlist ? "fill-green-400" : ""} />
-                {enWishlist ? "En favoritos" : "Agregar a favoritos"}
-              </button>
-            </div>
+  {producto.stock === 0 ? (
+    <>
+      <button
+        disabled
+        className="w-full py-4 rounded-xl font-black text-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        <ShoppingCart size={20} />
+        Sin stock
+      </button>
+      <p className="text-center text-zinc-500 text-sm">
+        Este producto está agotado actualmente
+      </p>
+    </>
+  ) : (
+    <>
+      <button
+        onClick={handleAgregar}
+        className={`w-full py-4 rounded-xl font-black text-lg transition flex items-center justify-center gap-2 ${
+          agregado ? "bg-green-600 text-white" : "bg-green-400 text-black hover:bg-green-300"
+        }`}
+      >
+        <ShoppingCart size={20} />
+        {agregado ? "Agregado al carrito" : "Añadir al carrito"}
+      </button>
+      <button
+  onClick={() => {
+    handleAgregar()
+    router.push("/checkout")
+  }}
+  className="w-full py-4 rounded-xl font-bold text-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 transition flex items-center justify-center gap-2"
+>
+  <Zap size={20} />
+  Comprar ahora
+</button>
+    </>
+  )}
+  <button
+    onClick={() => toggleWishlist(producto)}
+    className={`w-full py-3 rounded-xl font-medium text-sm border transition flex items-center justify-center gap-2 ${
+      enWishlist
+        ? "border-green-400 text-green-400 hover:bg-green-400/10"
+        : "border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300"
+    }`}
+  >
+    <Heart size={16} className={enWishlist ? "fill-green-400" : ""} />
+    {enWishlist ? "En favoritos" : "Agregar a favoritos"}
+  </button>
+</div>
 
             <div className="grid grid-cols-3 gap-3">
               {[
