@@ -16,16 +16,17 @@ function ResultadoContenido() {
 
 
   useEffect(() => {
-    if (status === "approved" && preferenceId) {
-      // Actualizar estado del pedido en Supabase
-      fetch("/api/actualizar-pedido", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ preferenceId, status }),
-      })
-      vaciarCarrito()
-    }
-  }, [status])
+  if (preferenceId && (status === "approved" || status === "success")) {
+    fetch("/api/actualizar-pedido", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preferenceId, status: "approved" }),
+    })
+    .then(r => r.json())
+    .then(data => console.log("Respuesta actualizar:", data))
+    vaciarCarrito()
+  }
+}, [status, preferenceId])
 
   useEffect(() => {
     // Ver todos los parámetros que llegan
