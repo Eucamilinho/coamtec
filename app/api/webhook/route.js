@@ -15,13 +15,19 @@ export async function POST(request) {
     const body = await request.json()
     console.log("Webhook recibido:", JSON.stringify(body))
 
+    // Ignorar notificaciones de prueba
+    if (body.live_mode === false && body.data?.id === "123456") {
+      return Response.json({ ok: true })
+    }
+
     if (body.type === "payment") {
       const paymentId = body.data.id
       console.log("Payment ID:", paymentId)
 
       const payment = new Payment(mp)
       const paymentInfo = await payment.get({ id: paymentId })
-      console.log("Payment info:", JSON.stringify(paymentInfo))
+      console.log("Status:", paymentInfo.status)
+      console.log("Preference ID:", paymentInfo.preference_id)
 
       const estado =
         paymentInfo.status === "approved" ? "pagado" :
@@ -36,7 +42,8 @@ export async function POST(request) {
         })
         .eq("mp_payment_id", String(paymentInfo.preference_id))
 
-      console.log("Supabase update error:", error)
+      if (error) console.error("Supabase error:", error)
+      else console.log("Pedido actualizado correctamente")
     }
 
     return Response.json({ ok: true })
