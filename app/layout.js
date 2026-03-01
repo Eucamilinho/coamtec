@@ -24,6 +24,12 @@ export function generateViewport() {
 export default function RootLayout({ children }) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://placehold.co" crossOrigin="true" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
+        <link rel="dns-prefetch" href="https://placehold.co" />
+        <link rel="preload" as="image" href="https://placehold.co/300x200" />
+      </head>
       <body className={inter.className}>
         <ThemeProvider>
           <Inicializador />
