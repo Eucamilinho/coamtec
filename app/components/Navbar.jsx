@@ -135,6 +135,7 @@ export default function Navbar() {
             {/* Toggle tema */}
             <button
               onClick={toggleTheme}
+              aria-label="Cambiar tema"
               className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
@@ -143,27 +144,64 @@ export default function Navbar() {
             {/* Buscador - solo icono en móvil */}
             <button
               onClick={() => { setBusquedaAbierta(!busquedaAbierta); setWishlistAbierta(false); setQuery("") }}
+              aria-label="Buscar productos"
               className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
             >
               <Search size={18} />
             </button>
 
-            {/* Wishlist - oculto en móvil */}
-            <button
-              onClick={() => { setWishlistAbierta(!wishlistAbierta); setBusquedaAbierta(false) }}
-              className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition relative"
-            >
-              <Heart size={18} />
-              {wishlist.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-400 text-black text-xs font-black rounded-full w-4 h-4 flex items-center justify-center">
-                  {wishlist.length}
-                </span>
+            {/* Wishlist (desktop) */}
+            <div className="relative">
+              <button
+                onClick={() => { setWishlistAbierta(!wishlistAbierta); setBusquedaAbierta(false) }}
+                aria-label="Ver favoritos"
+                className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+              >
+                <Heart size={18} />
+                {wishlist.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-green-400 text-black text-xs font-black rounded-full w-4 h-4 flex items-center justify-center">
+                    {wishlist.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown moved here when open */}
+              {wishlistAbierta && (
+                <div className="hidden md:block absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                    <h3 className="text-zinc-800 dark:text-white font-bold text-sm">Favoritos</h3>
+                    <button onClick={() => setWishlistAbierta(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition">
+                      <X size={14} />
+                    </button>
+                  </div>
+                  {wishlist.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500 text-sm">
+                      No tienes favoritos aún
+                    </div>
+                  ) : (
+                    wishlist.map((p) => (
+                      <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+                        <Link href={`/productos/${p.id}`} onClick={() => setWishlistAbierta(false)} className="flex items-center gap-3 flex-1 min-w-0">
+                          <img src={p.imagen} alt={p.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-zinc-800 dark:text-white text-sm truncate">{p.nombre}</p>
+                            <p className="text-green-400 text-xs font-bold">${precioFinal(p).toLocaleString()}</p>
+                          </div>
+                        </Link>
+                        <button onClick={() => toggleWishlist(p)} className="text-zinc-400 hover:text-red-400 transition flex-shrink-0">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
-            </button>
+            </div>
 
             {/* Carrito */}
             <Link
               href="/carrito"
+              aria-label="Ver carrito"
               className="relative w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
             >
               <ShoppingCart size={18} />
@@ -177,6 +215,7 @@ export default function Navbar() {
             {/* Hamburguesa */}
             <button
               onClick={() => { setMenuAbierto(!menuAbierto); cerrarTodo() }}
+              aria-label="Abrir menú"
               className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
             >
               {menuAbierto ? <X size={18} /> : <Menu size={18} />}
@@ -243,37 +282,6 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Wishlist dropdown desktop */}
-        {wishlistAbierta && (
-          <div className="hidden md:block absolute right-6 top-full mt-2 w-72 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
-            <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-              <h3 className="text-zinc-800 dark:text-white font-bold text-sm">Favoritos</h3>
-              <button onClick={() => setWishlistAbierta(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition">
-                <X size={14} />
-              </button>
-            </div>
-            {wishlist.length === 0 ? (
-              <div className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500 text-sm">
-                No tienes favoritos aún
-              </div>
-            ) : (
-              wishlist.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
-                  <Link href={`/productos/${p.id}`} onClick={() => setWishlistAbierta(false)} className="flex items-center gap-3 flex-1 min-w-0">
-                    <img src={p.imagen} alt={p.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-zinc-800 dark:text-white text-sm truncate">{p.nombre}</p>
-                      <p className="text-green-400 text-xs font-bold">${precioFinal(p).toLocaleString()}</p>
-                    </div>
-                  </Link>
-                  <button onClick={() => toggleWishlist(p)} className="text-zinc-400 hover:text-red-400 transition flex-shrink-0">
-                    <X size={14} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        )}
       </nav>
 
       {/* Menú móvil fullscreen */}

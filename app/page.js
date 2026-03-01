@@ -80,6 +80,14 @@ function Particulas() {
 }
 
 export default function Home() {
+  const orgSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Coam Tec",
+    url: "https://tu-dominio.com",
+    logo: "https://tu-dominio.com/logo.svg",
+    sameAs: [],
+  };
   const productos = useProductos((state) => state.productos);
   const [heroRef, heroInView] = useInView();
   const [statsRef, statsInView] = useInView();
@@ -107,6 +115,10 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+      />
       <style>{`
         @keyframes flotar {
           0%, 100% { transform: translateY(0px) scale(1); opacity: 0.2; }
@@ -228,7 +240,7 @@ export default function Home() {
             <div
               className={`relative opacity-0-init ${heroInView ? "animate-slide-right delay-200" : ""}`}
             >
-              <div className="relative bg-zinc-900 border border-zinc-800 rounded-3xl p-6 overflow-hidden">
+              <div className="relative bg-zinc-900 border border-zinc-800 rounded-3xl p-6 overflow-hidden shadow-2xl">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_#22c55e08_0%,_transparent_60%)] pointer-events-none" />
 
                 {/* Badge descuento */}
@@ -244,6 +256,8 @@ export default function Home() {
                     <img
                       src={productoActual.imagen}
                       alt={productoActual.nombre}
+                      width="600"
+                      height="600"
                       className="w-full h-full object-cover transition-all duration-700 hover:scale-105"
                     />
                   </div>
@@ -441,7 +455,7 @@ export default function Home() {
             <Link
               key={cat.nombre}
               href="/productos"
-              className={`group bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col items-center gap-4 hover:border-green-400 transition-all duration-300 hover:-translate-y-1 opacity-0-init ${catInView ? "animate-slide-in" : ""}`}
+              className={`group bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col items-center gap-4 hover:border-green-400 transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg opacity-0-init ${catInView ? "animate-slide-in" : ""}`}
               style={{ animationDelay: `${i * 0.1}s` }}
             >
               <div

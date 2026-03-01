@@ -43,7 +43,7 @@ export default function Carrito() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition"
+                className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 transition"
               >
                 {/* Fila superior: imagen + info + eliminar */}
                 <div className="flex gap-3 items-start">
@@ -92,7 +92,7 @@ export default function Carrito() {
 
           {/* Resumen */}
           <div>
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sticky top-24 flex flex-col gap-4">
+            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sticky top-24 flex flex-col gap-4 shadow-sm">
               <h2 className="text-lg font-bold text-zinc-800 dark:text-white">Resumen</h2>
 
               <div className="flex flex-col gap-2 text-sm">

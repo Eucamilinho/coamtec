@@ -116,7 +116,7 @@ export default function Checkout() {
           <div className="lg:col-span-2">
             {/* Paso 1 - Contacto */}
             {paso === 0 && (
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition">
                 <h2 className="text-xl font-bold">Información de contacto</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
@@ -160,7 +160,7 @@ export default function Checkout() {
 
             {/* Paso 2 - Envío */}
             {paso === 1 && (
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition">
                 <h2 className="text-xl font-bold">Dirección de envío</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
