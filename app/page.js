@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useProductos } from "./store/productosStore";
 import Link from "next/link";
-import BotonCarrito from "./components/BotonCarrito";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+const BotonCarrito = dynamic(() => import("./components/BotonCarrito"), { ssr: false });
 import {
   ArrowRight,
   Shield,
@@ -112,6 +114,24 @@ export default function Home() {
   };
 
   const productoActual = productos[indiceCarousel];
+  
+  useEffect(() => {
+    if (!productoActual || !productoActual.imagen) return;
+    const existing = document.head.querySelector('link[data-preload="hero"]');
+    if (existing) document.head.removeChild(existing);
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = productoActual.imagen;
+    link.dataset.preload = "hero";
+    document.head.appendChild(link);
+    return () => {
+      try {
+        const el = document.head.querySelector('link[data-preload="hero"]');
+        if (el) document.head.removeChild(el);
+      } catch (e) {}
+    };
+  }, [productoActual?.imagen]);
 
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white overflow-x-hidden">
@@ -253,11 +273,12 @@ export default function Home() {
                 {/* Imagen */}
                 <Link href={`/productos/${productoActual.id}`}>
                   <div className="relative overflow-hidden rounded-2xl bg-zinc-800 aspect-square cursor-pointer">
-                    <img
+                    <Image
                       src={productoActual.imagen}
                       alt={productoActual.nombre}
-                      width="600"
-                      height="600"
+                      width={600}
+                      height={600}
+                      priority
                       className="w-full h-full object-cover transition-all duration-700 hover:scale-105"
                     />
                   </div>

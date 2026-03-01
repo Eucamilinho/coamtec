@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import BotonCarrito from "./BotonCarrito";
+import dynamic from "next/dynamic";
+const BotonCarrito = dynamic(() => import("./BotonCarrito"), { ssr: false });
 import { useCarrito } from "../store/carritoStore";
 import Link from "next/link";
 import { Search, X, Grid, List, Zap } from "lucide-react";
