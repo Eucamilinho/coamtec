@@ -286,29 +286,29 @@ export default function Home() {
                   </div>
 
                   {productoActual.stock === 0 ? (
-  <button
-    disabled
-    className="relative z-10 w-full bg-zinc-800 text-zinc-400 font-black py-3 rounded-xl cursor-not-allowed text-sm"
-  >
-    Sin stock
-  </button>
-) : (
-  <button
-    onClick={(e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      const { agregarProducto } = useCarrito.getState()
-      agregarProducto({
-        ...productoActual,
-        precio: precioFinal(productoActual),
-      })
-    }}
-    className="relative z-10 w-full bg-green-400 text-black font-black py-3 rounded-xl hover:bg-green-300 transition flex items-center justify-center gap-2"
-  >
-    <ShoppingCart size={18} />
-    Agregar al carrito
-  </button>
-)}
+                    <button
+                      disabled
+                      className="relative z-10 w-full bg-zinc-800 text-zinc-400 font-black py-3 rounded-xl cursor-not-allowed text-sm"
+                    >
+                      Sin stock
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const { agregarProducto } = useCarrito.getState();
+                        agregarProducto({
+                          ...productoActual,
+                          precio: precioFinal(productoActual),
+                        });
+                      }}
+                      className="relative z-10 w-full bg-green-400 text-black font-black py-3 rounded-xl hover:bg-green-300 transition flex items-center justify-center gap-2"
+                    >
+                      <ShoppingCart size={18} />
+                      Agregar al carrito
+                    </button>
+                  )}
                 </div>
 
                 {/* Navegación carousel */}
@@ -520,82 +520,88 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {productos.slice(0, 4).map((producto, i) => {
-  const pf = precioFinal(producto)
-  return (
-    <div
-      key={producto.id}
-      className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden flex flex-col transition-all duration-300 group opacity-0-init ${
-        productosInView ? "animate-slide-in" : ""
-      } ${
-        producto.stock === 0
-          ? "opacity-70"
-          : "hover:border-green-400/60 hover:shadow-lg dark:hover:shadow-green-400/5 hover:-translate-y-1"
-      }`}
-      style={{ animationDelay: `${i * 0.1}s` }}
-    >
-      <div className="relative overflow-hidden bg-zinc-100 dark:bg-zinc-800 aspect-square">
-        {producto.stock === 0 && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-            <span className="bg-zinc-900 border border-zinc-700 text-zinc-400 font-black px-4 py-2 rounded-full text-sm">
-              Agotado
-            </span>
-          </div>
-        )}
-        {producto.stock > 0 && producto.descuento > 0 && (
-          <span className="absolute top-3 left-3 bg-green-400 text-black text-xs font-black px-2 py-1 rounded-full z-10">
-            -{producto.descuento}%
-          </span>
-        )}
-        {producto.stock <= 3 && producto.stock > 0 && (
-          <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
-            Últimas
-          </span>
-        )}
-        <img
-          src={producto.imagen}
-          alt={producto.nombre}
-          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-        />
-      </div>
-      <div className="p-4 flex flex-col gap-2 flex-1">
-        <span className="text-xs text-green-400 font-mono">{producto.categoria}</span>
-        <Link href={`/productos/${producto.id}`}>
-          <h3 className="text-zinc-800 dark:text-zinc-100 font-bold hover:text-green-400 transition leading-tight line-clamp-2">
-            {producto.nombre}
-          </h3>
-        </Link>
-        <div className="flex items-center gap-1">
-          {[1,2,3,4,5].map((i) => (
-            <Star key={i} size={10} className="text-yellow-400 fill-yellow-400" />
-          ))}
-          <span className="text-zinc-400 text-xs ml-1">4.8</span>
-        </div>
-        <div className="mt-auto pt-2 flex flex-col gap-2">
-          <div>
-            {producto.descuento > 0 && (
-              <span className="text-xs text-zinc-400 line-through block">
-                ${Number(producto.precio).toLocaleString()}
-              </span>
-            )}
-            <span className="text-xl font-black text-green-400">
-              ${pf.toLocaleString()}
-            </span>
-          </div>
-          {producto.stock === 0 ? (
-            <button
-              disabled
-              className="w-full py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-sm font-medium cursor-not-allowed"
-            >
-              Sin stock
-            </button>
-          ) : (
-            <BotonCarrito producto={{ ...producto, precio: pf }} />
-          )}
-        </div>
-      </div>
-    </div>
-  )
-})}
+              const pf = precioFinal(producto);
+              return (
+                <div
+                  key={producto.id}
+                  className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden flex flex-col transition-all duration-300 group opacity-0-init ${
+                    productosInView ? "animate-slide-in" : ""
+                  } ${
+                    producto.stock === 0
+                      ? "opacity-70"
+                      : "hover:border-green-400/60 hover:shadow-lg dark:hover:shadow-green-400/5 hover:-translate-y-1"
+                  }`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className="relative overflow-hidden bg-zinc-100 dark:bg-zinc-800 aspect-square">
+                    {producto.stock === 0 && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                        <span className="bg-zinc-900 border border-zinc-700 text-zinc-400 font-black px-4 py-2 rounded-full text-sm">
+                          Agotado
+                        </span>
+                      </div>
+                    )}
+                    {producto.stock > 0 && producto.descuento > 0 && (
+                      <span className="absolute top-3 left-3 bg-green-400 text-black text-xs font-black px-2 py-1 rounded-full z-10">
+                        -{producto.descuento}%
+                      </span>
+                    )}
+                    {producto.stock <= 3 && producto.stock > 0 && (
+                      <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                        Últimas
+                      </span>
+                    )}
+                    <img
+                      src={producto.imagen}
+                      alt={producto.nombre}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    />
+                  </div>
+                  <div className="p-4 flex flex-col gap-2 flex-1">
+                    <span className="text-xs text-green-400 font-mono">
+                      {producto.categoria}
+                    </span>
+                    <Link href={`/productos/${producto.id}`}>
+                      <h3 className="text-zinc-800 dark:text-zinc-100 font-bold hover:text-green-400 transition leading-tight line-clamp-2">
+                        {producto.nombre}
+                      </h3>
+                    </Link>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star
+                          key={i}
+                          size={10}
+                          className="text-yellow-400 fill-yellow-400"
+                        />
+                      ))}
+                      <span className="text-zinc-400 text-xs ml-1">4.8</span>
+                    </div>
+                    <div className="mt-auto pt-2 flex flex-col gap-2">
+                      <div>
+                        {producto.descuento > 0 && (
+                          <span className="text-xs text-zinc-400 line-through block">
+                            ${Number(producto.precio).toLocaleString()}
+                          </span>
+                        )}
+                        <span className="text-xl font-black text-green-400">
+                          ${pf.toLocaleString()}
+                        </span>
+                      </div>
+                      {producto.stock === 0 ? (
+                        <button
+                          disabled
+                          className="w-full py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-sm font-medium cursor-not-allowed"
+                        >
+                          Sin stock
+                        </button>
+                      ) : (
+                        <BotonCarrito producto={{ ...producto, precio: pf }} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

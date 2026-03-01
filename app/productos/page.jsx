@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useProductos } from "../store/productosStore";
 import BotonCarrito from "../components/BotonCarrito";
-import { useCarrito } from "../store/carritoStore"
+import { useCarrito } from "../store/carritoStore";
 import Link from "next/link";
 import { Search, X, Grid, List, Zap } from "lucide-react";
+import { useCompraRapida } from "../store/compraRapidaStore";
 
 export default function Productos() {
   const { productos, cargando, cargarProductos } = useProductos();
@@ -22,6 +23,15 @@ export default function Productos() {
     "Todos",
     ...new Set(productos.map((p) => p.categoria).filter(Boolean)),
   ];
+
+  useEffect(() => {
+  const handleResize = () => {
+    if (window.innerWidth < 768) setVista("grid")
+  }
+  handleResize()
+  window.addEventListener("resize", handleResize)
+  return () => window.removeEventListener("resize", handleResize)
+}, [])
 
   const productosFiltrados = productos
     .filter((p) => {
@@ -116,7 +126,7 @@ export default function Productos() {
             </button>
             <button
               onClick={() => setVista("lista")}
-              className={`px-4 py-2 rounded-lg transition font-medium text-sm flex items-center gap-2 ${
+              className={`hidden md:flex px-4 py-2 rounded-lg transition font-medium text-sm items-center gap-2 ${
                 vista === "lista"
                   ? "bg-green-400 text-black"
                   : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
@@ -241,9 +251,24 @@ export default function Productos() {
                       Sin stock
                     </button>
                   ) : (
-                    <BotonCarrito
-                      producto={{ ...producto, precio: precioFinal }}
-                    />
+                    <div className="flex flex-col gap-2">
+                      <BotonCarrito
+                        producto={{ ...producto, precio: precioFinal }}
+                      />
+                      <button
+                        onClick={() => {
+                          const { setItems } = useCompraRapida.getState();
+                          setItems([
+                            { ...producto, precio: precioFinal, cantidad: 1 },
+                          ]);
+                          window.location.href = "/checkout/rapido";
+                        }}
+                        className="w-full py-2.5 rounded-xl border-2 border-orange-500 bg-orange-500 text-white text-sm font-bold hover:bg-orange-400 hover:border-orange-400 transition flex items-center justify-center gap-1"
+                      >
+                        <Zap size={12} />
+                        Comprar ahora
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -331,20 +356,24 @@ export default function Productos() {
                         Sin stock
                       </button>
                     ) : (
-                      <div className="flex flex-col gap-2 items-end">
-  <BotonCarrito producto={{ ...producto, precio: precioFinal }} />
-  <button
-    onClick={() => {
-      const { agregarProducto } = useCarrito.getState()
-      agregarProducto({ ...producto, precio: precioFinal })
-      window.location.href = "/checkout"
-    }}
-    className="text-zinc-500 hover:text-green-400 text-xs transition flex items-center gap-1"
-  >
-    <Zap size={12} />
-    Comprar ahora
-  </button>
-</div>
+                      <div className="flex flex-col gap-2 items-end w-40">
+                        <BotonCarrito
+                          producto={{ ...producto, precio: precioFinal }}
+                        />
+                        <button
+                          onClick={() => {
+                            const { setItems } = useCompraRapida.getState();
+                            setItems([
+                              { ...producto, precio: precioFinal, cantidad: 1 },
+                            ]);
+                            window.location.href = "/checkout/rapido";
+                          }}
+                          className="w-full py-2 rounded-xl border-2 border-orange-500 bg-orange-500 text-white text-xs font-bold hover:bg-orange-400 hover:border-orange-400 transition flex items-center justify-center gap-1"
+                        >
+                          <Zap size={12} />
+                          Comprar ahora
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
