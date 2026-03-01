@@ -10,6 +10,11 @@ export const metadata = {
   title: "Coam Tec",
   description: "Los mejores accesorios gamer de Colombia",
   keywords: ["accesorios gamer", "teclados", "mouse", "audífonos", "micrófonos", "gaming"],
+  icons: {
+    icon: '/logo.svg',
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
+  },
 }
 
 export function generateViewport() {
@@ -29,6 +34,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
         <link rel="dns-prefetch" href="https://placehold.co" />
         <link rel="preload" as="image" href="https://placehold.co/300x200" />
+        <link rel="icon" href="/logo.svg" />
       </head>
       <body className={inter.className}>
         <ThemeProvider>
