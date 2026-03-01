@@ -22,10 +22,10 @@ export default function BotonCarrito({ producto }) {
   return (
     <button
       onClick={handleClick}
-      className={`w-full py-2.5 rounded-xl text-sm font-bold transition transform duration-300 flex items-center justify-center gap-2 shadow-sm ${
+      className={`w-full py-2.5 rounded-xl text-sm font-bold transition transform duration-300 flex items-center justify-center gap-2 shadow-sm cursor-pointer ${
   agregado
-    ? "bg-green-600 text-white scale-95 shadow-none"
-    : "bg-green-400 text-black hover:bg-green-300 hover:scale-105 hover:shadow-md"
+    ? "bg-blue-700 text-white scale-95 shadow-none"
+    : "bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 hover:shadow-md"
 }`}
     >
       <ShoppingCart size={14} />

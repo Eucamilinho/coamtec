@@ -73,7 +73,7 @@ export default function Navbar() {
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 py-3 shadow-xl"
+          ? "bg-white dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-300 dark:border-zinc-800 py-3 shadow-lg"
           : "bg-transparent py-5"
       }`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-2">
@@ -92,20 +92,20 @@ export default function Navbar() {
 
           {/* Links desktop */}
           <div className="hidden md:flex items-center gap-1">
-            <Link href="/" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-sm">
+            <Link href="/" className="text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition text-sm">
               Inicio
             </Link>
             <div className="relative">
               <button
                 onClick={() => setCategoriasAbiertas(!categoriasAbiertas)}
                 onBlur={() => setTimeout(() => setCategoriasAbiertas(false), 150)}
-                className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-sm flex items-center gap-1"
+                className="text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition text-sm flex items-center gap-1"
               >
                 Categorías
                 <ChevronDown size={14} className={`transition-transform duration-200 ${categoriasAbiertas ? "rotate-180" : ""}`} />
               </button>
               {categoriasAbiertas && (
-                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-2xl min-w-48">
+                <div className="absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-800 rounded-xl overflow-hidden shadow-lg min-w-48">
                   {categorias.map((cat) => (
                     <Link
                       key={cat}
@@ -124,7 +124,7 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-            <Link href="/productos" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-sm">
+            <Link href="/productos" className="text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition text-sm">
               Productos
             </Link>
           </div>
@@ -167,7 +167,7 @@ export default function Navbar() {
 
               {/* Dropdown moved here when open */}
               {wishlistAbierta && (
-                <div className="hidden md:block absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50">
+                <div className="hidden md:block absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-800 rounded-xl shadow-lg overflow-hidden z-50">
                   <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
                     <h3 className="text-zinc-800 dark:text-white font-bold text-sm">Favoritos</h3>
                     <button onClick={() => setWishlistAbierta(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition">

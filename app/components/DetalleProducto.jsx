@@ -129,16 +129,16 @@ export default function DetalleProductoClient({ producto }) {
 
       <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-zinc-400 mb-8">
-          <Link href="/" className="hover:text-green-400 transition">
+        <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 mb-8">
+          <Link href="/" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
             Inicio
           </Link>
           <ChevronRight size={14} />
-          <Link href="/productos" className="hover:text-green-400 transition">
+          <Link href="/productos" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
             Productos
           </Link>
           <ChevronRight size={14} />
-          <span className="text-zinc-600 dark:text-zinc-300">
+          <span className="text-zinc-700 dark:text-zinc-300">
             {producto.nombre}
           </span>
         </div>
@@ -148,7 +148,7 @@ export default function DetalleProductoClient({ producto }) {
           <div className="flex flex-col gap-4">
             {/* Imagen principal */}
             <div
-              className="relative bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden aspect-square flex items-center justify-center cursor-zoom-in group shadow-sm hover:shadow-lg transition"
+              className="relative bg-zinc-100 dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-800 rounded-2xl overflow-hidden aspect-square flex items-center justify-center cursor-zoom-in group shadow-sm hover:shadow-md transition"
               onClick={() => setModalAbierto(true)}
             >
               {producto.descuento > 0 && (
@@ -240,7 +240,9 @@ export default function DetalleProductoClient({ producto }) {
               ))}
               <span className="text-zinc-500 text-sm">4.8</span>
             </div>
-            <p className="text-zinc-600 dark:text-zinc-400">{producto.descripcion}</p>
+            {producto.categoria && (
+              <p className="text-zinc-500 text-sm font-medium uppercase tracking-wide">{producto.categoria}</p>
+            )}
             <div className="flex flex-col gap-3">
               <div className="flex items-baseline gap-4">
                 <span className="text-3xl font-extrabold text-green-500">
@@ -257,7 +259,7 @@ export default function DetalleProductoClient({ producto }) {
                 <div className="flex gap-3">
                   <button
                     onClick={handleAgregar}
-                    className="bg-green-400 text-black font-black py-3 px-6 rounded-xl hover:bg-green-300 transition flex items-center gap-2 shadow-md"
+                    className="bg-blue-600 text-white font-black py-3 px-6 rounded-xl hover:bg-blue-700 transition flex items-center gap-2 shadow-md cursor-pointer"
                   >
                     <ShoppingCart size={18} /> Añadir al carrito
                   </button>
@@ -266,7 +268,7 @@ export default function DetalleProductoClient({ producto }) {
                       setCompraRapida([{ ...producto, precio: precioFinal }]);
                       router.push('/checkout/rapido');
                     }}
-                    className="bg-black text-white font-bold py-3 px-5 rounded-xl hover:opacity-95 transition flex items-center gap-2 shadow"
+                    className="bg-red-600 text-white font-bold py-3 px-5 rounded-xl hover:bg-red-700 transition flex items-center gap-2 shadow cursor-pointer"
                   >
                     <Zap size={16} /> Comprar ahora
                   </button>
@@ -308,12 +310,13 @@ export default function DetalleProductoClient({ producto }) {
                 </div>
               </div>
 
-              {/* Descripción ampliada */}
+              {/* Descripción ampliada con soporte HTML */}
               <div className="mt-6">
-                <h2 className="text-lg font-bold mb-2">Descripción</h2>
-                <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                  {producto.descripcion || "Descripción no disponible."}
-                </p>
+                <h2 className="text-lg font-bold mb-3">Descripción</h2>
+                <div 
+                  className="text-zinc-700 dark:text-zinc-300 leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: producto.descripcion || "Descripción no disponible." }}
+                />
               </div>
 
               {producto.caracteristicas && producto.caracteristicas.length > 0 && (
