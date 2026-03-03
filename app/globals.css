@@ -1,0 +1,196 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Prevenir flash de tema - aplicar color inmediatamente */
+html {
+  background-color: #0b1020;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+html.light {
+  background-color: #eef2f6;
+}
+
+html.dark {
+  background-color: #0b1020;
+}
+
+:root {
+  --background: #eef2f6;
+  --foreground: #0f0f10;
+}
+
+.dark {
+  --background: #0b1020;
+  --foreground: #e6f0ff;
+  --surface-1: #10172a;
+  --surface-2: #161f38;
+  --surface-3: #1d2947;
+  --line: #2a3a66;
+  --line-strong: #395089;
+  --muted: #8aa3d1;
+  --primary: #7c3aed;
+  --primary-strong: #8b5cf6;
+  --secondary: #00e5ff;
+  --success: #00ffb2;
+  --danger: #ff4d8d;
+  --glow-primary: 0 0 0 1px rgba(124, 58, 237, 0.35), 0 0 20px rgba(124, 58, 237, 0.35);
+  --glow-secondary: 0 0 0 1px rgba(0, 229, 255, 0.28), 0 0 18px rgba(0, 229, 255, 0.25);
+  --shadow-card: 0 12px 28px rgba(3, 8, 24, 0.65), 0 0 0 1px rgba(57, 80, 137, 0.35);
+}
+
+/* Animación de entrada suave - CSS puro, no bloquea JS */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+  animation: fadeIn 0.3s ease-out;
+}
+
+a {
+  transition: color 0.2s ease;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Shimmer loading effect para imágenes */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    #e5e7eb 0%,
+    #f3f4f6 50%,
+    #e5e7eb 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    #1f2937 0%,
+    #374151 50%,
+    #1f2937 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* ========= Dark mode premium gamer palette ========= */
+.dark body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(124, 58, 237, 0.16), transparent 35%),
+    radial-gradient(circle at 88% 14%, rgba(0, 229, 255, 0.12), transparent 38%),
+    linear-gradient(180deg, #090f1f 0%, var(--background) 35%, #090f1e 100%);
+  color: var(--foreground);
+}
+
+/* Alternate section background */
+.dark section:nth-of-type(even) {
+  background-color: rgba(16, 23, 42, 0.58);
+}
+
+/* Map most-used dark utility colors to cyber palette without touching components */
+.dark .dark\:bg-zinc-950 { background-color: #0b1020 !important; }
+.dark .dark\:bg-zinc-900,
+.dark .dark\:bg-zinc-900\/40,
+.dark .dark\:bg-zinc-900\/80 { background-color: var(--surface-1) !important; }
+.dark .dark\:bg-zinc-800,
+.dark .dark\:bg-zinc-800\/80 { background-color: var(--surface-2) !important; }
+.dark .dark\:border-zinc-800,
+.dark .dark\:border-zinc-700 { border-color: var(--line) !important; }
+.dark .dark\:text-white { color: #f3f7ff !important; }
+.dark .dark\:text-zinc-300,
+.dark .dark\:text-zinc-200 { color: #c7d7f8 !important; }
+.dark .dark\:text-zinc-400 { color: var(--muted) !important; }
+.dark .dark\:text-zinc-500 { color: #9cb3de !important; }
+
+/* Mejorar contraste de placeholders */
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9cb3de !important;
+  opacity: 1;
+}
+
+/* CTA principal */
+.dark .dark\:bg-green-400 {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%) !important;
+  color: #f8fbff !important;
+  box-shadow: var(--glow-primary);
+}
+
+/* Interactive states */
+.dark button,
+.dark a,
+.dark [role="button"] {
+  transition: all 0.22s ease, box-shadow 0.25s ease;
+}
+
+.dark button:hover,
+.dark a:hover,
+.dark [role="button"]:hover {
+  filter: saturate(1.08);
+}
+
+.dark button:active,
+.dark a:active,
+.dark [role="button"]:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark input:focus-visible,
+.dark textarea:focus-visible,
+.dark select:focus-visible {
+  outline: none;
+  border-color: var(--secondary) !important;
+  box-shadow: var(--glow-secondary);
+}
+
+/* Inputs & forms */
+.dark input,
+.dark textarea,
+.dark select {
+  background: linear-gradient(180deg, #111a31 0%, #0f1730 100%);
+  border-color: var(--line) !important;
+  color: #e9f2ff;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #7f96c7;
+}
+
+/* Cards elevation */
+.dark article,
+.dark .rounded-2xl,
+.dark .rounded-3xl {
+  box-shadow: var(--shadow-card);
+}
+
+/* Subtle neon hover for cards */
+.dark article:hover {
+  border-color: var(--line-strong) !important;
+  box-shadow:
+    0 16px 34px rgba(3, 8, 24, 0.72),
+    0 0 0 1px rgba(124, 58, 237, 0.42),
+    0 0 22px rgba(124, 58, 237, 0.22);
+}
