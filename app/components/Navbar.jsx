@@ -254,6 +254,10 @@ export default function Navbar() {
             <Link href="/productos?oferta=true" className="text-red-500 hover:text-red-400 px-4 py-2 text-sm font-bold uppercase tracking-wide transition">
               Ofertas
             </Link>
+
+            <Link href="/ubicaciones" className="text-zinc-700 dark:text-zinc-300 hover:text-green-500 dark:hover:text-green-400 px-4 py-2 text-sm font-medium uppercase tracking-wide transition">
+              Cobertura
+            </Link>
           </div>
         </div>
 
@@ -404,6 +408,14 @@ export default function Navbar() {
               className="flex items-center justify-between py-3.5 border-b border-zinc-100 dark:border-zinc-800 text-red-500 font-bold uppercase tracking-wide text-sm"
             >
               🔥 Ofertas <ArrowRight size={14} className="text-red-400" />
+            </Link>
+
+            <Link
+              href="/ubicaciones"
+              onClick={() => setMenuAbierto(false)}
+              className="flex items-center justify-between py-3.5 border-b border-zinc-100 dark:border-zinc-800 text-zinc-800 dark:text-white font-semibold uppercase tracking-wide text-sm"
+            >
+              📍 Cobertura <ArrowRight size={14} className="text-zinc-400" />
             </Link>
 
             <p className="text-zinc-400 text-[10px] font-bold tracking-widest uppercase mt-5 mb-1.5">Categorías</p>

@@ -15,8 +15,8 @@ export const metadata = {
     default: "Coam Tec | Accesorios Gamer Colombia",
     template: "%s | Coam Tec"
   },
-  description: "Coam Tec es la tienda líder de accesorios gamer en Colombia. Teclados, mouse, audífonos y micrófonos gaming con envío a todo el país.",
-  keywords: ["Coam Tec", "accesorios gamer", "teclados gamer", "mouse gamer", "audífonos gaming", "micrófonos", "gaming colombia", "periféricos gamer", "tienda gamer colombia"],
+  description: "Coam Tec es la tienda líder de accesorios gamer en Colombia. Teclados, mouse, audífonos y micrófonos gaming con envío a Bucaramanga, Bogotá, Medellín y todo Colombia.",
+  keywords: ["Coam Tec", "accesorios gamer colombia", "teclados gamer bucaramanga", "mouse gamer bogotá", "audífonos gaming medellín", "teclados mecánicos colombia", "periféricos gamer bucaramanga", "tienda gamer colombia", "gaming colombia", "accesorios gaming bucaramanga", "teclados colombia", "mouse colombia", "gaming bucaramanga", "tienda gamer bucaramanga"],
   authors: [{ name: "Coam Tec" }],
   creator: "Coam Tec",
   publisher: "Coam Tec",
@@ -30,8 +30,8 @@ export const metadata = {
     locale: 'es_CO',
     url: 'https://coamtec.com',
     siteName: 'Coam Tec',
-    title: 'Coam Tec | Accesorios Gamer Colombia',
-    description: 'Coam Tec es la tienda líder de accesorios gamer en Colombia. Teclados, mouse, audífonos y micrófonos gaming con envío a todo el país.',
+    title: 'Coam Tec | Accesorios Gamer Colombia - Bucaramanga',
+    description: 'Coam Tec es la tienda líder de accesorios gamer en Colombia. Teclados, mouse, audífonos y micrófonos gaming con envío a Bucaramanga, Bogotá, Medellín y todo Colombia.',
     images: [
       {
         url: '/og-image.png',
@@ -80,13 +80,41 @@ export default function RootLayout({ children }) {
       "@type": "ImageObject", 
       url: "https://coamtec.com/logo.svg"
     },
-    description: "Tienda líder de accesorios gamer en Colombia",
+    description: "Tienda líder de accesorios gamer en Colombia con cobertura en Bucaramanga, Bogotá, Medellín, Cali y todo el territorio nacional",
     address: {
       "@type": "PostalAddress",
-      addressCountry: "CO"
+      addressCountry: "CO",
+      addressRegion: "Santander",
+      addressLocality: "Bucaramanga"
     },
+    areaServed: [
+      {
+        "@type": "Country",
+        "name": "Colombia"
+      },
+      {
+        "@type": "City", 
+        "name": "Bucaramanga"
+      },
+      {
+        "@type": "City",
+        "name": "Bogotá"  
+      },
+      {
+        "@type": "City",
+        "name": "Medellín"
+      },
+      {
+        "@type": "City", 
+        "name": "Cali"
+      },
+      {
+        "@type": "City",
+        "name": "Barranquilla"
+      }
+    ],
     foundingDate: "2024",
-    slogan: "Los mejores accesorios gamer de Colombia",
+    slogan: "Los mejores accesorios gamer de Colombia - Envío a Bucaramanga y todo el país",
     sameAs: []
   };
 

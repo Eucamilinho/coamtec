@@ -4,8 +4,8 @@ import ProductosListado from "../components/ProductosListado";
 
 export async function generateMetadata({ searchParams }) {
   const sp = await searchParams;
-  // we can't easily fetch here unless we make the function async and import supabase
-  const titleParts = ["Productos", "Coam Tec"];
+  
+  const titleParts = ["Productos Gaming", "Coam Tec"];
   if (sp?.categoria && sp.categoria !== "Todos") {
     titleParts.unshift(sp.categoria);
   }
@@ -13,12 +13,33 @@ export async function generateMetadata({ searchParams }) {
     titleParts.unshift(`Buscar: ${sp.q}`);
   }
 
+  // Generar descripción local dinámica
+  let descripcion = "Tienda de accesorios gamer en Colombia: teclados mecánicos, mouse gaming, audífonos y micrófonos con envío a Bucaramanga, Bogotá, Medellín y toda Colombia.";
+  
+  if (sp?.categoria) {
+    const descripciones = {
+      "Teclados": "Teclados mecánicos y gamer en Colombia. Switches blue, red, brown con envío a Bucaramanga, Bogotá y todo el país.",
+      "Mouse": "Mouse gamer y ergonómicos en Colombia. Alta precisión DPI y RGB con envío rápido desde Bucaramanga.",
+      "Audífonos": "Audífonos gaming premium en Colombia. Sonido surround y micrófono profesional con envío nacional.",
+      "Micrófonos": "Micrófonos streaming y gaming en Colombia. Calidad profesional con envío desde Bucaramanga."
+    };
+    descripcion = descripciones[sp.categoria] || descripcion;
+  }
+
   return {
     title: titleParts.join(" – "),
-    description: "Explora nuestra tienda de accesorios gamer: teclados, mouse, audífonos y más con envío en Colombia.",
+    description: descripcion,
+    keywords: [
+      "productos gaming colombia",
+      "accesorios gamer bucaramanga", 
+      "teclados mecánicos colombia",
+      "mouse gamer bogotá",
+      "audífonos gaming medellín",
+      "tienda gamer colombia"
+    ],
     openGraph: {
       title: titleParts.join(" – "),
-      description: "Explora nuestra tienda de accesorios gamer: teclados, mouse, audífonos y más con envío en Colombia.",
+      description: descripcion,
       url: `https://coamtec.com/productos`,
     },
     alternates: {

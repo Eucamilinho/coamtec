@@ -19,6 +19,12 @@ export default async function sitemap() {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/ubicaciones`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/carrito`,
       lastModified: new Date(),
       changeFrequency: "weekly",
