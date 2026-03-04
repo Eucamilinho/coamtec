@@ -8,6 +8,7 @@ import { useWishlist } from "../store/wishlistStore"
 import { useRouter } from "next/navigation"
 import { Search, Heart, ShoppingCart, Menu, X, ChevronDown, Package, Keyboard, Mouse, Headphones, Mic, Sun, Moon, ArrowRight, Phone, Truck, CreditCard, User } from "lucide-react"
 import { useTheme } from "./ThemeProvider"
+import { getProductUrl } from "../lib/slugs"
 
 export default function Navbar() {
   const items = useCarrito((state) => state.items)
@@ -318,7 +319,7 @@ export default function Navbar() {
                 {resultados.map((p) => (
                   <Link
                     key={p.id}
-                    href={`/productos/${p.id}`}
+                    href={getProductUrl(p)}
                     onClick={() => { setBusquedaAbierta(false); setQuery("") }}
                     className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition border-b border-zinc-100 dark:border-zinc-800 last:border-0"
                   >
@@ -357,7 +358,7 @@ export default function Navbar() {
             ) : (
               wishlist.map((p) => (
                 <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">
-                  <Link href={`/productos/${p.id}`} onClick={() => setWishlistAbierta(false)} className="flex items-center gap-3 flex-1 min-w-0">
+                  <Link href={getProductUrl(p)} onClick={() => setWishlistAbierta(false)} className="flex items-center gap-3 flex-1 min-w-0">
                     <img src={p.imagen} alt={p.nombre} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="text-zinc-800 dark:text-white text-sm truncate">{p.nombre}</p>

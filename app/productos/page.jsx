@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { createSlug } from "../lib/slugs";
 import ProductosListado from "../components/ProductosListado";
 
 export async function generateMetadata({ searchParams }) {
@@ -46,7 +47,7 @@ export default async function ProductosPage({ searchParams }) {
     itemListElement: productos.map((p, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      url: `https://coamtec.com/productos/${p.id}`,
+      url: `https://coamtec.com/productos/${createSlug(p.nombre, p.id)}`,
       name: p.nombre,
     })),
   };

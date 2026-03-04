@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { getProductUrl } from "../../lib/slugs";
 
 const BotonCarrito = dynamic(() => import("../BotonCarrito"), { ssr: false });
 
@@ -31,7 +32,7 @@ export default function FeaturedProductsSection({ products = [] }) {
               key={producto.id}
               className="group rounded-2xl border-none bg-white dark:bg-zinc-900 p-4 shadow-md shadow-zinc-200/80 transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:shadow-none"
             >
-              <Link href={`/productos/${producto.id}`} className="block">
+              <Link href={getProductUrl(producto)} className="block">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl shimmer-bg">
                   <Image
                     src={producto.imagen}
@@ -50,7 +51,7 @@ export default function FeaturedProductsSection({ products = [] }) {
                     {producto.categoria}
                   </p>
                 )}
-                <Link href={`/productos/${producto.id}`}>
+                <Link href={getProductUrl(producto)}>
                   <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900 dark:text-white hover:text-blue-600 dark:hover:text-green-400 transition">
                     {producto.nombre}
                   </h3>
@@ -63,7 +64,17 @@ export default function FeaturedProductsSection({ products = [] }) {
                   )}
                 </div>
 
-                <BotonCarrito producto={{ ...producto, precio: final }} />
+                {producto.stock === 0 ? (
+                  <button
+                    disabled
+                    aria-disabled="true"
+                    className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 py-2.5 text-sm font-semibold text-zinc-500"
+                  >
+                    No disponible
+                  </button>
+                ) : (
+                  <BotonCarrito producto={{ ...producto, precio: final }} />
+                )}
               </div>
             </article>
           );

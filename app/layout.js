@@ -12,11 +12,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   metadataBase: new URL('https://coamtec.com'),
   title: {
-    default: "Coam Tec - Accesorios Gamer Colombia",
+    default: "Coam Tec | Accesorios Gamer Colombia",
     template: "%s | Coam Tec"
   },
-  description: "Los mejores accesorios gamer de Colombia. Teclados, mouse, audífonos y micrófonos con envío a todo el país.",
-  keywords: ["accesorios gamer", "teclados gamer", "mouse gamer", "audífonos gaming", "micrófonos", "gaming colombia", "periféricos gamer"],
+  description: "Coam Tec es la tienda líder de accesorios gamer en Colombia. Teclados, mouse, audífonos y micrófonos gaming con envío a todo el país.",
+  keywords: ["Coam Tec", "accesorios gamer", "teclados gamer", "mouse gamer", "audífonos gaming", "micrófonos", "gaming colombia", "periféricos gamer", "tienda gamer colombia"],
   authors: [{ name: "Coam Tec" }],
   creator: "Coam Tec",
   publisher: "Coam Tec",
@@ -30,8 +30,8 @@ export const metadata = {
     locale: 'es_CO',
     url: 'https://coamtec.com',
     siteName: 'Coam Tec',
-    title: 'Coam Tec - Accesorios Gamer Colombia',
-    description: 'Los mejores accesorios gamer de Colombia. Teclados, mouse, audífonos y micrófonos con envío a todo el país.',
+    title: 'Coam Tec | Accesorios Gamer Colombia',
+    description: 'Coam Tec es la tienda líder de accesorios gamer en Colombia. Teclados, mouse, audífonos y micrófonos gaming con envío a todo el país.',
     images: [
       {
         url: '/og-image.png',
@@ -43,8 +43,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Coam Tec - Accesorios Gamer Colombia',
-    description: 'Los mejores accesorios gamer de Colombia',
+    title: 'Coam Tec | Accesorios Gamer Colombia',
+    description: 'Coam Tec es la tienda líder de accesorios gamer en Colombia',
     images: ['/og-image.png'],
   },
   robots: {
@@ -58,9 +58,6 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: 'tu-codigo-de-verificacion-google',
-  },
 }
 
 export function generateViewport() {
@@ -73,9 +70,49 @@ export function generateViewport() {
 }
 
 export default function RootLayout({ children }) {
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Coam Tec",
+    alternateName: "CoamTec",
+    url: "https://coamtec.com",
+    logo: {
+      "@type": "ImageObject", 
+      url: "https://coamtec.com/logo.svg"
+    },
+    description: "Tienda líder de accesorios gamer en Colombia",
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "CO"
+    },
+    foundingDate: "2024",
+    slogan: "Los mejores accesorios gamer de Colombia",
+    sameAs: []
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Coam Tec",
+    url: "https://coamtec.com",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://coamtec.com/productos?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

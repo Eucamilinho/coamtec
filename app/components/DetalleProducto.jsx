@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCarrito } from "../store/carritoStore";
 import { useWishlist } from "../store/wishlistStore";
 import { useCompraRapida } from "../store/compraRapidaStore";
+import { getProductUrl } from "../lib/slugs";
 import {
   ShoppingCart,
   Heart,
@@ -215,67 +216,79 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
                 )}
               </div>
 
-              <p className="text-sm font-semibold text-emerald-500">
-                {producto.stock > 0 ? `Disponible (${producto.stock} unidades)` : "Producto sin stock"}
+              <p className={`text-sm font-semibold ${producto.stock > 0 ? "text-emerald-500" : "text-red-500"}`}>
+                {producto.stock > 0 ? `Disponible (${producto.stock} unidades)` : "Sin stock"}
               </p>
 
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">Cantidad:</span>
-                <div className="inline-flex items-center overflow-hidden rounded-xl border border-zinc-300 dark:border-zinc-700">
-                  <button
-                    type="button"
-                    aria-label="Disminuir cantidad"
-                    onClick={() => setCantidad((value) => Math.max(1, value - 1))}
-                    className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    <Minus size={18} aria-hidden="true" />
-                  </button>
-                  <span className="w-12 text-center text-sm font-bold" aria-live="polite">{cantidad}</span>
-                  <button
-                    type="button"
-                    aria-label="Aumentar cantidad"
-                    onClick={() => setCantidad((value) => value + 1)}
-                    className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    <Plus size={18} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
+              {producto.stock > 0 ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400">Cantidad:</span>
+                    <div className="inline-flex items-center overflow-hidden rounded-xl border border-zinc-300 dark:border-zinc-700">
+                      <button
+                        type="button"
+                        aria-label="Disminuir cantidad"
+                        onClick={() => setCantidad((value) => Math.max(1, value - 1))}
+                        className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      >
+                        <Minus size={18} aria-hidden="true" />
+                      </button>
+                      <span className="w-12 text-center text-sm font-bold" aria-live="polite">{cantidad}</span>
+                      <button
+                        type="button"
+                        aria-label="Aumentar cantidad"
+                        onClick={() => setCantidad((value) => value + 1)}
+                        className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      >
+                        <Plus size={18} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={agregarAlCarrito}
-                  className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-black text-white transition hover:bg-green-700"
-                >
-                  <ShoppingCart size={17} aria-hidden="true" /> Añadir al carrito
-                </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={agregarAlCarrito}
+                      className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-black text-white transition hover:bg-green-700"
+                    >
+                      <ShoppingCart size={17} aria-hidden="true" /> Añadir al carrito
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCompraRapida([{ ...producto, precio: precioFinal }]);
-                    router.push("/checkout/rapido");
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-green-600 px-5 py-3 text-sm font-bold text-green-600 transition hover:bg-green-50 dark:border-green-500 dark:text-green-500 dark:hover:bg-green-500/10"
-                >
-                  <Zap size={16} aria-hidden="true" /> Comprar ahora
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCompraRapida([{ ...producto, precio: precioFinal }]);
+                        router.push("/checkout/rapido");
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl border border-green-600 px-5 py-3 text-sm font-bold text-green-600 transition hover:bg-green-50 dark:border-green-500 dark:text-green-500 dark:hover:bg-green-500/10"
+                    >
+                      <Zap size={16} aria-hidden="true" /> Comprar ahora
+                    </button>
 
+                    <button
+                      type="button"
+                      aria-label={enWishlist ? "Quitar de favoritos" : "Agregar a favoritos"}
+                      aria-pressed={enWishlist}
+                      onClick={() => toggleWishlist(producto)}
+                      className={`inline-flex h-12 w-12 items-center justify-center rounded-xl border transition ${
+                        enWishlist
+                          ? "border-red-400 bg-red-400 text-white"
+                          : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-500"
+                      }`}
+                    >
+                      <Heart size={20} aria-hidden="true" />
+                    </button>
+                  </div>
+                </>
+              ) : (
                 <button
-                  type="button"
-                  aria-label={enWishlist ? "Quitar de favoritos" : "Agregar a favoritos"}
-                  aria-pressed={enWishlist}
-                  onClick={() => toggleWishlist(producto)}
-                  className={`inline-flex h-12 w-12 items-center justify-center rounded-xl border transition ${
-                    enWishlist
-                      ? "border-red-400 bg-red-400 text-white"
-                      : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-500"
-                  }`}
+                  disabled
+                  aria-disabled="true"
+                  className="w-full max-w-xs rounded-xl bg-zinc-100 dark:bg-zinc-800 py-3 text-sm font-semibold text-zinc-500"
                 >
-                  <Heart size={20} aria-hidden="true" />
+                  No disponible
                 </button>
-              </div>
+              )}
             </div>
 
             <div className="grid gap-3 text-sm text-zinc-700 dark:text-zinc-300">
@@ -323,7 +336,7 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
                   : item.precio;
 
                 return (
-                  <Link key={item.id} href={`/productos/${item.id}`} className="group">
+                  <Link key={item.id} href={getProductUrl(item)} className="group">
                     <article className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-[0_0_0_1px_rgba(39,39,42,0.5),0_10px_24px_rgba(0,0,0,0.35)]">
                       <div className="relative aspect-[4/3] overflow-hidden rounded-xl shimmer-bg">
                         <Image

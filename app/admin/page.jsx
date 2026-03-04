@@ -252,6 +252,15 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
   setFormulario(actualizado)
 }
 
+  // Notificar a Google/Bing de actualizaciones
+  const pingSearchEngines = async () => {
+    try {
+      await fetch("/api/ping-sitemap", { method: "POST" });
+    } catch (e) {
+      // Silent fail - no interrumpir el flujo
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formulario.nombre || !formulario.precio) return;
     if (editando) {
@@ -260,6 +269,8 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
     } else {
       await agregarProducto(formulario);
     }
+    // Notificar a buscadores del nuevo/actualizado producto
+    pingSearchEngines();
     setFormulario(productoVacio);
     setPreview(null);
     setVista("productos");

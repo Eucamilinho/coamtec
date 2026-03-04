@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Grid, List, Search, X, Zap } from "lucide-react";
 import { useCompraRapida } from "../store/compraRapidaStore";
+import { getProductUrl } from "../lib/slugs";
 import ProductsPagination from "./productos/ProductsPagination";
 import {
   ProductGridSkeleton,
@@ -24,7 +25,7 @@ function ProductoCardGrid({ producto }) {
   const pf = precioFinal(producto);
 
   return (
-    <Link href={`/productos/${producto.id}`} className="group">
+    <Link href={getProductUrl(producto)} className="group">
       <article
         className={`relative flex h-full flex-col rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 p-4 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:bg-white dark:hover:bg-zinc-800 ${
           producto.stock === 0 ? "opacity-70" : ""
@@ -118,7 +119,7 @@ function ProductoCardList({ producto }) {
         producto.stock === 0 ? "opacity-70" : ""
       }`}
     >
-      <Link href={`/productos/${producto.id}`} className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl shimmer-bg">
+      <Link href={getProductUrl(producto)} className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl shimmer-bg">
         <Image
           src={producto.imagen}
           alt={`${producto.nombre} - ${producto.categoria || "Producto"}`}
@@ -135,7 +136,7 @@ function ProductoCardList({ producto }) {
             {producto.categoria}
           </p>
         )}
-        <Link href={`/productos/${producto.id}`}>
+        <Link href={getProductUrl(producto)}>
           <h2 className="mt-1 line-clamp-2 text-lg font-semibold text-zinc-900 dark:text-white transition hover:text-green-600 dark:hover:text-green-400">
             {producto.nombre}
           </h2>

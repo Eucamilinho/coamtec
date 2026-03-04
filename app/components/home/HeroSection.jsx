@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { getProductUrl } from "../../lib/slugs";
 
 // Componente 3D - lazy load
 const Teclado3D = dynamic(() => import("./Teclado3D"), {
@@ -120,7 +121,7 @@ export default function HeroSection({ featuredProducts = [] }) {
                 {slides.map((slide, index) => (
                   <Link 
                     key={slide.id || index}
-                    href={`/productos/${slide.id}`}
+                    href={getProductUrl(slide)}
                     className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${index === activeIndex ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"}`}
                   >
                     <Image
