@@ -1,24 +1,218 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useCarrito } from "../store/carritoStore";
 import Link from "next/link";
+import Image from "next/image";
 import {
-  ChevronRight,
   Lock,
   Truck,
   Shield,
   CreditCard,
   Building2,
   Wallet,
+  ArrowLeft,
+  Package,
+  Phone,
+  Mail,
+  MapPin,
+  CheckCircle,
+  AlertTriangle,
+  ChevronDown,
+  Search
 } from "lucide-react";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-const PASOS = ["Contacto", "Envío", "Pago"];
+// Simulación de APIs de empresas de mensajería
+const cotizarServientrega = async (origen, destino, peso, valorDeclarado) => {
+  // Simulación - en producción conectar con API real de Servientrega
+  await new Promise(resolve => setTimeout(resolve, 800));
+  const basePrice = 12000;
+  const weightFactor = Math.ceil(peso / 1000) * 2000;
+  const distanceFactor = origen !== destino ? 1.5 : 1;
+  const insuranceFactor = valorDeclarado > 100000 ? 1.2 : 1;
+  
+  return {
+    empresa: "Servientrega",
+    precio: Math.round(basePrice * distanceFactor * insuranceFactor + weightFactor),
+    tiempoEntrega: "1-3 días hábiles",
+    confiable: true
+  };
+};
+
+const cotizarEnvia = async (origen, destino, peso, valorDeclarado) => {
+  // Simulación - en producción conectar con API real de Envía
+  await new Promise(resolve => setTimeout(resolve, 600));
+  const basePrice = 10500;
+  const weightFactor = Math.ceil(peso / 1000) * 1800;
+  const distanceFactor = origen !== destino ? 1.4 : 1;
+  const insuranceFactor = valorDeclarado > 100000 ? 1.15 : 1;
+  
+  return {
+    empresa: "Envía",
+    precio: Math.round(basePrice * distanceFactor * insuranceFactor + weightFactor),
+    tiempoEntrega: "2-4 días hábiles",
+    confiable: true
+  };
+};
+
+const cotizarInterrapidisimo = async (origen, destino, peso, valorDeclarado) => {
+  // Simulación - en producción conectar con API real de Interrapidísimo
+  await new Promise(resolve => setTimeout(resolve, 700));
+  const basePrice = 11800;
+  const weightFactor = Math.ceil(peso / 1000) * 1900;
+  const distanceFactor = origen !== destino ? 1.45 : 1;
+  const insuranceFactor = valorDeclarado > 100000 ? 1.18 : 1;
+  
+  return {
+    empresa: "Interrapidísimo",
+    precio: Math.round(basePrice * distanceFactor * insuranceFactor + weightFactor),
+    tiempoEntrega: "1-2 días hábiles",
+    confiable: true
+  };
+};
+
+// Componente SearchableSelect
+function SearchableSelect({ options, value, onChange, placeholder, disabled, error, label }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filteredOptions, setFilteredOptions] = useState(options);
+  const containerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const filtered = options.filter(option =>
+      option.toLowerCase().includes(search.toLowerCase())
+    );
+    setFilteredOptions(filtered);
+  }, [search, options]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (option) => {
+    onChange({ target: { name: label.toLowerCase(), value: option } });
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  const displayValue = value || placeholder;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen(!isOpen);
+            setTimeout(() => inputRef.current?.focus(), 100);
+          }
+        }}
+        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white cursor-pointer transition flex items-center justify-between ${
+          disabled 
+            ? 'opacity-50 cursor-not-allowed' 
+            : 'hover:border-green-400 focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-500'
+        } ${
+          error ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+        }`}
+      >
+        {isOpen ? (
+          <div className="flex items-center gap-2 flex-1">
+            <Search size={16} className="text-zinc-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Buscar ${label.toLowerCase()}...`}
+              className="flex-1 outline-none bg-transparent text-zinc-900 dark:text-white placeholder-zinc-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        ) : (
+          <span className={value ? 'text-zinc-900 dark:text-white' : 'text-zinc-500'}>
+            {displayValue}
+          </span>
+        )}
+        <ChevronDown 
+          size={16} 
+          className={`text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <div
+                key={option}
+                onClick={() => handleSelect(option)}
+                className={`px-4 py-3 cursor-pointer transition hover:bg-zinc-50 dark:hover:bg-zinc-700 ${
+                  value === option ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'text-zinc-900 dark:text-white'
+                }`}
+              >
+                {option}
+              </div>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-zinc-500 text-center">
+              No se encontraron resultados
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Ciudades donde está disponible contraentrega
+const CIUDADES_CONTRAENTREGA = ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"];
+
+// Datos de departamentos y ciudades de Colombia
+const DEPARTAMENTOS_CIUDADES = {
+  "Santander": ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "Socorro", "San Gil"],
+  "Cundinamarca": ["Bogotá", "Soacha", "Facatativá", "Chía", "Zipaquirá", "Fusagasugá", "Girardot"],
+  "Antioquia": ["Medellín", "Bello", "Itagüí", "Envigado", "Sabaneta", "Apartadó", "Turbo"],
+  "Valle del Cauca": ["Cali", "Palmira", "Tuluá", "Cartago", "Buga", "Jamundí", "Yumbo"],
+  "Atlántico": ["Barranquilla", "Soledad", "Malambo", "Sabanalarga", "Puerto Colombia"],
+  "Bolívar": ["Cartagena", "Magangué", "Turbaco", "Arjona", "El Carmen de Bolívar"],
+  "Norte de Santander": ["Cúcuta", "Villa del Rosario", "Los Patios", "Pamplona", "Ocaña"],
+  "Córdoba": ["Montería", "Lorica", "Cereté", "Sahagún", "Planeta Rica"],
+  "Sucre": ["Sincelejo", "Corozal", "Sampués", "San Marcos", "Tolú"],
+  "Magdalena": ["Santa Marta", "Ciénaga", "Fundación", "Zona Bananera", "Aracataca"],
+  "La Guajira": ["Riohacha", "Maicao", "Valledupar", "Fonseca", "San Juan del Cesar"],
+  "Cesar": ["Valledupar", "Aguachica", "Bosconia", "Codazzi", "La Jagua de Ibirico"],
+  "Huila": ["Neiva", "Pitalito", "Garzón", "La Plata", "Campoalegre"],
+  "Tolima": ["Ibagué", "Espinal", "Melgar", "Honda", "Chaparral"],
+  "Risaralda": ["Pereira", "Dosquebradas", "Santa Rosa de Cabal", "La Virginia"],
+  "Caldas": ["Manizales", "Villamaría", "Chinchiná", "La Dorada", "Riosucio"],
+  "Quindío": ["Armenia", "Calarcá", "La Tebaida", "Montenegro", "Quimbaya"],
+  "Meta": ["Villavicencio", "Acacías", "Granada", "San Martín", "Puerto López"],
+  "Casanare": ["Yopal", "Aguazul", "Villanueva", "Monterrey", "Tauramena"],
+  "Boyacá": ["Tunja", "Duitama", "Sogamoso", "Chiquinquirá", "Paipa"],
+  "Nariño": ["Pasto", "Tumaco", "Ipiales", "Túquerres", "Samaniego"],
+  "Cauca": ["Popayán", "Santander de Quilichao", "Puerto Tejada", "Patía"],
+  "Caquetá": ["Florencia", "San Vicente del Caguán", "La Montañita", "Curillo"],
+  "Putumayo": ["Mocoa", "Puerto Asís", "Orito", "Valle del Guamuez"],
+  "Amazonas": ["Leticia", "Puerto Nariño", "La Chorrera"],
+  "Arauca": ["Arauca", "Saravena", "Tame", "Fortul"],
+  "Chocó": ["Quibdó", "Istmina", "Condoto", "Acandí"],
+  "Guainía": ["Inírida", "Barranco Minas"],
+  "Guaviare": ["San José del Guaviare", "Calamar"],
+  "Vaupés": ["Mitú", "Carurú"],
+  "Vichada": ["Puerto Carreño", "La Primavera"]
+};
 
 export default function Checkout() {
   const { items, vaciarCarrito } = useCarrito();
-  const [paso, setPaso] = useState(0);
   const [formulario, setFormulario] = useState({
     nombre: "",
     email: "",
@@ -27,40 +221,168 @@ export default function Checkout() {
     ciudad: "",
     direccion: "",
     referencia: "",
-    metodoPago: "",
+    metodoPago: "contraentrega",
   });
 
   const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState("");
+  const [errores, setErrores] = useState({});
+  const [ciudadesDisponibles, setCiudadesDisponibles] = useState([]);
+  const [opcionesEnvio, setOpcionesEnvio] = useState([]);
+  const [cotizandoEnvio, setCotizandoEnvio] = useState(false);
+  const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
   const router = useRouter();
 
-  const subtotal = items.reduce(
-    (acc, item) => acc + item.precio * item.cantidad,
-    0,
-  );
-  const envio = 15000;
+  // Función para calcular peso total del pedido
+  const calcularPesoTotal = (items) => {
+    // Peso estimado por producto (en gramos)
+    // En producción, esto vendría de la base de datos de productos
+    return items.reduce((total, item) => {
+      const pesoEstimado = 500; // 500g por producto promedio
+      return total + (pesoEstimado * item.cantidad);
+    }, 0);
+  };
+
+  const subtotal = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+  const envio = envioSeleccionado ? envioSeleccionado.precio : (subtotal >= 150000 ? 0 : 15000);
   const total = subtotal + envio;
+  
+  // Verificar si contraentrega está disponible para la ciudad seleccionada
+  const contraentregaDisponible = CIUDADES_CONTRAENTREGA.includes(formulario.ciudad);
+  
+  // Función para cotizar envío con todas las empresas
+  const cotizarEnvios = async (ciudad, departamento) => {
+    if (!ciudad || !departamento) return;
+    
+    setCotizandoEnvio(true);
+    setOpcionesEnvio([]);
+    setEnvioSeleccionado(null);
+    
+    try {
+      const pesoTotal = calcularPesoTotal(items);
+      const valorDeclarado = subtotal;
+      const origen = "Bucaramanga"; // Ciudad origen de la tienda
+      const destino = ciudad;
+      
+      // Cotizar con todas las empresas en paralelo
+      const [servientrega, envia, interrapidisimo] = await Promise.all([
+        cotizarServientrega(origen, destino, pesoTotal, valorDeclarado),
+        cotizarEnvia(origen, destino, pesoTotal, valorDeclarado),
+        cotizarInterrapidisimo(origen, destino, pesoTotal, valorDeclarado)
+      ]);
+      
+      const opciones = [servientrega, envia, interrapidisimo]
+        .filter(opcion => opcion.confiable)
+        .sort((a, b) => a.precio - b.precio); // Ordenar por precio
+      
+      setOpcionesEnvio(opciones);
+      
+      // Auto-seleccionar la opción más económica si hay opciones disponibles
+      if (opciones.length > 0) {
+        setEnvioSeleccionado(opciones[0]);
+      }
+      
+    } catch (error) {
+      console.error('Error cotizando envíos:', error);
+      // Fallback a precio fijo si falla la cotización
+      const fallback = {
+        empresa: "Envío estándar",
+        precio: subtotal >= 150000 ? 0 : 15000,
+        tiempoEntrega: "3-5 días hábiles",
+        confiable: true
+      };
+      setOpcionesEnvio([fallback]);
+      setEnvioSeleccionado(fallback);
+    } finally {
+      setCotizandoEnvio(false);
+    }
+  };
 
   const handleChange = (e) => {
-    setFormulario({ ...formulario, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Si se cambia el departamento, actualizar las ciudades y limpiar la ciudad seleccionada
+    if (name === "departamento") {
+      setCiudadesDisponibles(DEPARTAMENTOS_CIUDADES[value] || []);
+      setFormulario(prev => ({ ...prev, departamento: value, ciudad: "", metodoPago: "transferencia" }));
+    }
+    // Si se cambia la ciudad, verificar si contraentrega está disponible
+    else if (name === "ciudad") {
+      const contraentregaDisponible = CIUDADES_CONTRAENTREGA.includes(value);
+      setFormulario(prev => ({
+        ...prev,
+        ciudad: value,
+        metodoPago: !contraentregaDisponible && prev.metodoPago === "contraentrega" ? "transferencia" : prev.metodoPago
+      }));      
+      // Cotizar envío cuando se selecciona la ciudad
+      cotizarEnvios(value, formulario.departamento);      
+      // Cotizar envío cuando se selecciona la ciudad
+      cotizarEnvios(value, formulario.departamento);
+    }
+    else {
+      setFormulario({ ...formulario, [name]: value });
+    }
+    
+    // Limpiar error del campo al empezar a escribir
+    if (errores[name]) {
+      setErrores({ ...errores, [name]: "" });
+    }
   };
 
-  const handleSiguiente = () => {
-    if (paso < PASOS.length - 1) setPaso(paso + 1);
+  const validarFormulario = () => {
+    const nuevosErrores = {};
+    
+    if (!formulario.nombre.trim()) nuevosErrores.nombre = "Nombre requerido";
+    if (!formulario.email.trim()) nuevosErrores.email = "Email requerido";
+    if (!formulario.telefono.trim()) nuevosErrores.telefono = "Teléfono requerido";
+    if (!formulario.departamento.trim()) nuevosErrores.departamento = "Departamento requerido";
+    if (!formulario.ciudad.trim()) nuevosErrores.ciudad = "Ciudad requerida";
+    if (!formulario.direccion.trim()) nuevosErrores.direccion = "Dirección requerida";
+    
+    // Validar email básico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formulario.email && !emailRegex.test(formulario.email)) {
+      nuevosErrores.email = "Email inválido";
+    }
+    
+    setErrores(nuevosErrores);
+    return Object.keys(nuevosErrores).length === 0;
   };
 
-  const handleAnterior = () => {
-    if (paso > 0) setPaso(paso - 1);
+  const procesarPedido = async () => {
+    if (!validarFormulario()) return;
+    
+    setCargando(true);
+    
+    try {
+      // Simular proceso de pedido
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Vaciar carrito y redirigir
+      vaciarCarrito();
+      router.push("/checkout/resultado?success=true");
+    } catch (error) {
+      console.error("Error procesando pedido:", error);
+      alert("Error al procesar el pedido. Intenta de nuevo.");
+    } finally {
+      setCargando(false);
+    }
   };
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center pt-20">
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-zinc-800 dark:text-white mb-4">
+      <div className="min-h-screen bg-white dark:bg-zinc-950 pt-24">
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <Package size={64} className="mx-auto mb-6 text-zinc-300 dark:text-zinc-600" />
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">
             Tu carrito está vacío
           </h1>
-          <Link href="/productos" className="text-green-400 hover:underline">
+          <p className="text-zinc-600 dark:text-zinc-400 mb-8">
+            Agrega productos para continuar con el checkout
+          </p>
+          <Link 
+            href="/productos"
+            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-xl transition"
+          >
             Ver productos
           </Link>
         </div>
@@ -69,401 +391,440 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white pt-20">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <h1 className="text-4xl font-black mb-10">
-          Finalizar <span className="text-green-400">pedido</span>
-        </h1>
-
-        {/* Pasos */}
-        <div className="flex items-center gap-2 mb-10">
-          {PASOS.map((p, i) => (
-            <div key={p} className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition ${
-                  i === paso
-                    ? "bg-green-400 text-black"
-                    : i < paso
-                      ? "bg-green-400/20 text-green-400"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
-                }`}
-              >
-                <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-black ${
-                    i === paso
-                      ? "bg-black/20"
-                      : i < paso
-                        ? "bg-green-400 text-black"
-                        : "bg-zinc-300 dark:bg-zinc-700 text-zinc-500"
-                  }`}
-                >
-                  {i < paso ? "✓" : i + 1}
-                </span>
-                {p}
-              </div>
-              {i < PASOS.length - 1 && (
-                <ChevronRight
-                  size={16}
-                  className="text-zinc-300 dark:text-zinc-700"
-                />
-              )}
-            </div>
-          ))}
+    <div className="min-h-screen bg-white dark:bg-zinc-950 pt-24 pb-16">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link 
+            href="/carrito"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition"
+          >
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white">
+              Finalizar pedido
+            </h1>
+            <p className="text-zinc-600 dark:text-zinc-400">
+              Completa tu información para procesar el envío
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Formulario */}
-          <div className="lg:col-span-2">
-            {/* Paso 1 - Contacto */}
-            {paso === 0 && (
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition">
-                <h2 className="text-xl font-bold">Información de contacto</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-zinc-500 text-sm">
-                      Nombre completo
-                    </label>
-                    <input
-                      name="nombre"
-                      value={formulario.nombre}
-                      onChange={handleChange}
-                      placeholder="Juan Pérez"
-                      className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-zinc-500 text-sm">Email</label>
-                    <input
-                      name="email"
-                      value={formulario.email}
-                      onChange={handleChange}
-                      type="email"
-                      placeholder="juan@email.com"
-                      className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-zinc-500 text-sm">
-                      Teléfono / WhatsApp
-                    </label>
-                    <input
-                      name="telefono"
-                      value={formulario.telefono}
-                      onChange={handleChange}
-                      placeholder="3001234567"
-                      className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
-                    />
-                  </div>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Información personal */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                <Phone size={20} className="text-green-500" />
+                Información de contacto
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Nombre completo *
+                  </label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={formulario.nombre}
+                    onChange={handleChange}
+                    placeholder="Tu nombre completo"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.nombre ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.nombre && (
+                    <p className="text-red-500 text-sm mt-1">{errores.nombre}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formulario.email}
+                    onChange={handleChange}
+                    placeholder="tu@email.com"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.email ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.email && (
+                    <p className="text-red-500 text-sm mt-1">{errores.email}</p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Teléfono / WhatsApp *
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={formulario.telefono}
+                    onChange={handleChange}
+                    placeholder="3001234567"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.telefono ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.telefono && (
+                    <p className="text-red-500 text-sm mt-1">{errores.telefono}</p>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Paso 2 - Envío */}
-            {paso === 1 && (
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition">
-                <h2 className="text-xl font-bold">Dirección de envío</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-zinc-500 text-sm">
-                      Departamento
-                    </label>
-                    <input
-                      name="departamento"
-                      value={formulario.departamento}
-                      onChange={handleChange}
-                      placeholder="Santander"
-                      className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-zinc-500 text-sm">Ciudad</label>
-                    <input
-                      name="ciudad"
-                      value={formulario.ciudad}
-                      onChange={handleChange}
-                      placeholder="Bucaramanga"
-                      className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-zinc-500 text-sm">Dirección</label>
-                    <input
-                      name="direccion"
-                      value={formulario.direccion}
-                      onChange={handleChange}
-                      placeholder="Calle 45 # 32 - 15"
-                      className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-zinc-500 text-sm">
-                      Referencia o indicaciones
-                    </label>
-                    <textarea
-                      name="referencia"
-                      value={formulario.referencia}
-                      onChange={handleChange}
-                      placeholder="Apto 301, edificio azul, cerca al parque..."
-                      rows={3}
-                      className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition resize-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Opciones de envío */}
-                <div className="flex flex-col gap-2 mt-2">
-                  <label className="text-zinc-500 text-sm font-medium">
-                    Método de envío
+            {/* Dirección de envío */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                <MapPin size={20} className="text-green-500" />
+                Dirección de envío
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Departamento *
                   </label>
-                  {[
-                    {
-                      id: "estandar",
-                      label: "Envío estándar",
-                      desc: "3 a 5 días hábiles",
-                      precio: 15000,
-                    },
-                    {
-                      id: "express",
-                      label: "Envío express",
-                      desc: "1 a 2 días hábiles",
-                      precio: 25000,
-                    },
-                  ].map((opcion) => (
-                    <label
-                      key={opcion.id}
-                      className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${
-                        formulario.envio === opcion.id
-                          ? "border-green-400 bg-green-400/5"
-                          : "border-zinc-200 dark:border-zinc-700 hover:border-green-400/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
+                  <SearchableSelect
+                    label="Departamento"
+                    options={Object.keys(DEPARTAMENTOS_CIUDADES)}
+                    value={formulario.departamento}
+                    onChange={handleChange}
+                    placeholder="Selecciona un departamento"
+                    error={errores.departamento}
+                  />
+                  {errores.departamento && (
+                    <p className="text-red-500 text-sm mt-1">{errores.departamento}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Ciudad *
+                  </label>
+                  <SearchableSelect
+                    label="Ciudad"
+                    options={ciudadesDisponibles}
+                    value={formulario.ciudad}
+                    onChange={handleChange}
+                    placeholder={formulario.departamento ? "Selecciona una ciudad" : "Primero selecciona un departamento"}
+                    disabled={!formulario.departamento}
+                    error={errores.ciudad}
+                  />
+                  {errores.ciudad && (
+                    <p className="text-red-500 text-sm mt-1">{errores.ciudad}</p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Dirección completa *
+                  </label>
+                  <input
+                    type="text"
+                    name="direccion"
+                    value={formulario.direccion}
+                    onChange={handleChange}
+                    placeholder="Calle 45 # 32-15, Apartamento 301"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.direccion ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.direccion && (
+                    <p className="text-red-500 text-sm mt-1">{errores.direccion}</p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Referencia o indicaciones adicionales
+                  </label>
+                  <textarea
+                    name="referencia"
+                    value={formulario.referencia}
+                    onChange={handleChange}
+                    placeholder="Ej: Casa blanca con portón verde, timbre amarillo"
+                    rows={3}
+                    className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Opciones de envío */}
+            {formulario.ciudad && (
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+                <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Truck size={20} className="text-green-500" />
+                  Opciones de envío
+                </h2>
+                
+                {cotizandoEnvio ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                      <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Cotizando envío con Servientrega, Envía e Interrapidísimo...</span>
+                    </div>
+                  </div>
+                ) : opcionesEnvio.length > 0 ? (
+                  <div className="space-y-3">
+                    {opcionesEnvio.map((opcion, index) => (
+                      <label
+                        key={index}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                          envioSeleccionado?.empresa === opcion.empresa
+                            ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                            : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        }`}
+                      >
                         <input
                           type="radio"
                           name="envio"
-                          value={opcion.id}
-                          onChange={handleChange}
-                          className="accent-green-400"
+                          checked={envioSeleccionado?.empresa === opcion.empresa}
+                          onChange={() => setEnvioSeleccionado(opcion)}
+                          className="w-4 h-4 text-green-500 focus:ring-green-500"
                         />
-                        <div>
-                          <p className="text-zinc-800 dark:text-white font-medium text-sm">
-                            {opcion.label}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-zinc-900 dark:text-white">
+                              {opcion.empresa}
+                            </p>
+                            {index === 0 && (
+                              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                                Más económico
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            Entrega: {opcion.tiempoEntrega}
                           </p>
-                          <p className="text-zinc-500 text-xs">{opcion.desc}</p>
                         </div>
-                      </div>
-                      <span className="text-green-400 font-bold text-sm">
-                        ${opcion.precio.toLocaleString()}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-zinc-900 dark:text-white">
+                            {opcion.precio === 0 ? '¡Gratis!' : `$${opcion.precio.toLocaleString()}`}
+                          </p>
+                          {opcion.precio > 0 && subtotal >= 150000 && (
+                            <p className="text-xs text-green-600 dark:text-green-400">Envío gratis aplicado</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                    
+                    <div className="mt-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        💡 <strong>Peso estimado:</strong> {(calcularPesoTotal(items) / 1000).toFixed(1)} kg
+                      </p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        📦 <strong>Valor declarado:</strong> ${subtotal.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ) : formulario.ciudad ? (
+                  <div className="text-center py-6 text-zinc-500">
+                    <Truck size={32} className="mx-auto mb-2 opacity-50" />
+                    <p>No se pudieron cargar opciones de envío</p>
+                    <button
+                      onClick={() => cotizarEnvios(formulario.ciudad, formulario.departamento)}
+                      className="mt-2 text-green-500 hover:text-green-600 text-sm"
+                    >
+                      Intentar de nuevo
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )}
 
-            {/* Paso 3 - Pago */}
-            {paso === 2 && (
-              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
-                <h2 className="text-xl font-bold">Método de pago</h2>
-                <div className="flex flex-col gap-3">
-                  {[
-                    {
-                      id: "tarjeta",
-                      icon: <CreditCard size={20} />,
-                      label: "Tarjeta débito / crédito",
-                      desc: "Visa, Mastercard, Amex",
-                    },
-                    {
-                      id: "pse",
-                      icon: <Building2 size={20} />,
-                      label: "PSE",
-                      desc: "Débito desde tu banco",
-                    },
-                    {
-                      id: "contraentrega",
-                      icon: <Wallet size={20} />,
-                      label: "Contra entrega",
-                      desc: "Paga cuando recibas",
-                    },
-                  ].map((metodo) => (
-                    <label
-                      key={metodo.id}
-                      className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition ${
-                        formulario.metodoPago === metodo.id
-                          ? "border-green-400 bg-green-400/5"
-                          : "border-zinc-200 dark:border-zinc-700 hover:border-green-400/50"
-                      }`}
-                    >
+            {/* Método de pago */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                <CreditCard size={20} className="text-green-500" />
+                Método de pago
+              </h2>
+              
+              <div className="space-y-3">
+                {contraentregaDisponible ? (
+                  <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                    formulario.metodoPago === "contraentrega" 
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
+                      : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="metodoPago"
+                      value="contraentrega"
+                      checked={formulario.metodoPago === "contraentrega"}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-green-500 focus:ring-green-500"
+                    />
+                    <Wallet size={20} className="text-zinc-600 dark:text-zinc-400" />
+                    <div className="flex-1">
+                      <p className="font-medium text-zinc-900 dark:text-white">Contraentrega</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">Paga cuando recibas tu pedido</p>
+                    </div>
+                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                      Recomendado
+                    </span>
+                  </label>
+                ) : (
+                  <div className="p-4 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl opacity-50">
+                    <div className="flex items-center gap-4">
                       <input
                         type="radio"
-                        name="metodoPago"
-                        value={metodo.id}
-                        onChange={handleChange}
-                        className="accent-green-400"
+                        disabled
+                        className="w-4 h-4 text-zinc-300"
                       />
-                      <div className="text-green-400">{metodo.icon}</div>
-                      <div>
-                        <p className="text-zinc-800 dark:text-white font-medium text-sm">
-                          {metodo.label}
-                        </p>
-                        <p className="text-zinc-500 text-xs">{metodo.desc}</p>
+                      <Wallet size={20} className="text-zinc-400" />
+                      <div className="flex-1">
+                        <p className="font-medium text-zinc-500">Contraentrega</p>
+                        <p className="text-sm text-zinc-400">Solo disponible en Bucaramanga, Floridablanca, Girón y Piedecuesta</p>
                       </div>
-                    </label>
-                  ))}
-                </div>
-
-                {/* Resumen final */}
-                <div className="bg-green-400/5 border border-green-400/20 rounded-xl p-4 flex flex-col gap-2 mt-2">
-                  <p className="text-zinc-700 dark:text-zinc-300 text-sm font-medium">
-                    Resumen del pedido
-                  </p>
-                  <div className="flex justify-between text-sm text-zinc-500">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm text-zinc-500">
-                    <span>Envío</span>
-                    <span>${envio.toLocaleString()}</span>
+                )}
+                
+                <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                  formulario.metodoPago === "transferencia" 
+                    ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
+                    : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                }`}>
+                  <input
+                    type="radio"
+                    name="metodoPago"
+                    value="transferencia"
+                    checked={formulario.metodoPago === "transferencia"}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-green-500 focus:ring-green-500"
+                  />
+                  <Building2 size={20} className="text-zinc-600 dark:text-zinc-400" />
+                  <div className="flex-1">
+                    <p className="font-medium text-zinc-900 dark:text-white">Transferencia bancaria</p>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">Consigna o transferencia a nuestra cuenta</p>
                   </div>
-                  <div className="flex justify-between font-black text-lg border-t border-green-400/20 pt-2">
-                    <span className="text-zinc-800 dark:text-white">Total</span>
-                    <span className="text-green-400">
-                      ${total.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
+                </label>
               </div>
-            )}
-
-            {/* Botones navegación */}
-            <div className="flex justify-between mt-6">
-              {paso > 0 ? (
-                <button
-                  onClick={handleAnterior}
-                  className="border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 px-6 py-3 rounded-xl hover:border-zinc-400 transition font-medium"
-                >
-                  ← Anterior
-                </button>
-              ) : (
-                <Link
-                  href="/carrito"
-                  className="border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 px-6 py-3 rounded-xl hover:border-zinc-400 transition font-medium"
-                >
-                  ← Volver al carrito
-                </Link>
-              )}
-              {paso < PASOS.length - 1 ? (
-                <button
-                  onClick={handleSiguiente}
-                  className="bg-green-400 text-black font-black px-8 py-3 rounded-xl hover:bg-green-300 transition"
-                >
-                  Siguiente →
-                </button>
-              ) : (
-                <button
-                  onClick={async () => {
-                    setCargando(true);
-                    setError("");
-                    try {
-                      const res = await fetch("/api/crear-preferencia", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          items,
-                          formulario,
-                          subtotal,
-                          envio,
-                          total,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (data.url) {
-                        window.location.href = data.url;
-                      } else {
-                        setError(
-                          "Error al procesar el pago. Intenta de nuevo.",
-                        );
-                      }
-                    } catch (err) {
-                      setError("Error de conexión. Intenta de nuevo.");
-                    }
-                    setCargando(false);
-                  }}
-                  disabled={cargando || !formulario.metodoPago}
-                  className="bg-green-400 text-black font-black px-8 py-3 rounded-xl hover:bg-green-300 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Lock size={16} />
-                  {cargando ? "Procesando..." : "Confirmar pedido"}
-                </button>
-              )}
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-          {/* Resumen lateral */}
-          <div>
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sticky top-24 flex flex-col gap-4">
-              <h3 className="font-bold text-zinc-800 dark:text-white">
-                Tu pedido
-              </h3>
-              <div className="flex flex-col gap-3">
+          {/* Resumen del pedido */}
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sticky top-24">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                Resumen del pedido
+              </h2>
+              
+              {/* Lista de productos */}
+              <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-3 items-center">
-                    <div className="relative flex-shrink-0">
-                      <img
+                  <div key={item.id} className="flex items-center gap-3">
+                    <div className="relative w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image
                         src={item.imagen}
                         alt={item.nombre}
-                        className="w-12 h-12 rounded-lg object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="48px"
                       />
-                      <span className="absolute -top-1 -right-1 bg-green-400 text-black text-xs font-black w-4 h-4 rounded-full flex items-center justify-center">
-                        {item.cantidad}
-                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-zinc-800 dark:text-white text-sm font-medium truncate">
+                      <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">
                         {item.nombre}
                       </p>
+                      <p className="text-xs text-zinc-500">
+                        Cantidad: {item.cantidad}
+                      </p>
                     </div>
-                    <p className="text-green-400 font-bold text-sm flex-shrink-0">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">
                       ${(item.precio * item.cantidad).toLocaleString()}
                     </p>
                   </div>
                 ))}
               </div>
-              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 flex flex-col gap-2">
-                <div className="flex justify-between text-sm text-zinc-500">
-                  <span>Subtotal</span>
-                  <span>${subtotal.toLocaleString()}</span>
+              
+              {/* Totales */}
+              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">
+                    Subtotal ({items.reduce((acc, i) => acc + i.cantidad, 0)} productos)
+                  </span>
+                  <span className="text-zinc-900 dark:text-white">
+                    ${subtotal.toLocaleString()}
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm text-zinc-500">
-                  <span>Envío</span>
-                  <span>${envio.toLocaleString()}</span>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">Envío</span>
+                  <div className="text-right">
+                    <span className={`${envio === 0 ? 'text-green-500 font-semibold' : 'text-zinc-900 dark:text-white'}`}>
+                      {envio === 0 ? '¡Gratis!' : `$${envio.toLocaleString()}`}
+                    </span>
+                    {envioSeleccionado && (
+                      <p className="text-xs text-zinc-500">
+                        {envioSeleccionado.empresa}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between font-black text-lg">
-                  <span className="text-zinc-800 dark:text-white">Total</span>
-                  <span className="text-green-400">
+                
+                {subtotal >= 150000 && (
+                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <CheckCircle size={12} />
+                    Envío gratis por compra mayor a $150.000
+                  </div>
+                )}
+                
+                <div className="border-t border-zinc-200 dark:border-zinc-800 pt-2 flex justify-between font-semibold">
+                  <span className="text-zinc-900 dark:text-white">Total</span>
+                  <span className="text-lg text-green-500">
                     ${total.toLocaleString()}
                   </span>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 pt-2">
-                {[
-                  { icon: <Lock size={12} />, label: "Pago 100% seguro" },
-                  { icon: <Truck size={12} />, label: "Envío a todo Colombia" },
-                  {
-                    icon: <Shield size={12} />,
-                    label: "Garantía en todos los productos",
-                  },
-                ].map((item) => (
-                  <p
-                    key={item.label}
-                    className="text-zinc-400 text-xs flex items-center gap-2"
-                  >
-                    <span className="text-green-400">{item.icon}</span>
-                    {item.label}
-                  </p>
-                ))}
+              
+              {/* Botón de confirmar pedido */}
+              <button
+                onClick={procesarPedido}
+                disabled={cargando}
+                className={`w-full mt-6 py-4 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 ${
+                  cargando
+                    ? 'bg-zinc-400 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                {cargando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <Lock size={16} />
+                    Confirmar pedido
+                  </>
+                )}
+              </button>
+              
+              {/* Garantías */}
+              <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <Shield size={12} className="text-green-500" />
+                  <span>Compra 100% segura</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <Truck size={12} className="text-green-500" />
+                  <span>Envío a toda Colombia</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <Package size={12} className="text-green-500" />
+                  <span>Garantía en todos los productos</span>
+                </div>
               </div>
             </div>
           </div>

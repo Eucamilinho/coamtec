@@ -3,15 +3,32 @@
 import { useCarrito } from "../store/carritoStore"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, Tag, Lock, Truck, RotateCcw } from "lucide-react"
+import { useState } from "react"
+import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, Tag, Lock, Truck, RotateCcw, AlertTriangle, Package } from "lucide-react"
 
 export default function Carrito() {
-  const { items, eliminarProducto, vaciarCarrito } = useCarrito()
+  const { items, eliminarProducto, vaciarCarrito, actualizarCantidad, cantidadDisponible } = useCarrito()
   const router = useRouter()
+  const [stockAlerts, setStockAlerts] = useState({})
 
   const subtotal = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
   const envio = subtotal > 0 ? 15000 : 0
   const total = subtotal + envio
+  
+  // Validar si hay productos sin stock suficiente
+  const hayProductosSinStock = items.some(item => !item.stock || item.cantidad > item.stock)
+  const hayStockInsuficiente = items.some(item => item.stock && item.stock < item.cantidad)
+  
+  const mostrarAlertaStock = (productId, mensaje) => {
+    setStockAlerts(prev => ({ ...prev, [productId]: mensaje }))
+    setTimeout(() => {
+      setStockAlerts(prev => {
+        const newAlerts = { ...prev }
+        delete newAlerts[productId]
+        return newAlerts
+      })
+    }, 3000)
+  }
 
   if (items.length === 0) {
     return (
@@ -60,6 +77,41 @@ export default function Carrito() {
                     <p className="text-green-400 font-bold text-sm mt-0.5">
                       ${item.precio.toLocaleString()} c/u
                     </p>
+                    
+                    {/* Información de stock */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <Package size={12} className="text-zinc-400" />
+                      <span className={`text-xs ${
+                        !item.stock || item.stock === 0 
+                          ? 'text-red-500 font-semibold' 
+                          : item.stock <= 3 
+                          ? 'text-orange-500 font-medium'
+                          : 'text-zinc-500'
+                      }`}>
+                        {!item.stock || item.stock === 0 
+                          ? 'Sin stock'
+                          : item.stock <= 3
+                          ? `¡Solo ${item.stock} disponible${item.stock > 1 ? 's' : ''}!`
+                          : `${item.stock} disponibles`
+                        }
+                      </span>
+                    </div>
+                    
+                    {/* Alerta de stock */}
+                    {stockAlerts[item.id] && (
+                      <div className="flex items-center gap-2 mt-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 rounded px-2 py-1">
+                        <AlertTriangle size={12} />
+                        <span>{stockAlerts[item.id]}</span>
+                      </div>
+                    )}
+                    
+                    {/* Alerta si cantidad excede stock */}
+                    {item.stock && item.cantidad > item.stock && (
+                      <div className="flex items-center gap-2 mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">
+                        <AlertTriangle size={12} />
+                        <span>Cantidad en carrito ({item.cantidad}) excede stock disponible ({item.stock})</span>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => eliminarProducto(item.id)}
@@ -73,7 +125,7 @@ export default function Carrito() {
                 {/* Fila inferior: cantidad + subtotal */}
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800">
                   <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2">
-                    <CantidadControl item={item} />
+                    <CantidadControl item={item} mostrarAlertaStock={mostrarAlertaStock} />
                   </div>
                   <p className="text-zinc-800 dark:text-white font-bold text-base">
                     ${(item.precio * item.cantidad).toLocaleString()}
@@ -126,11 +178,43 @@ export default function Carrito() {
                 </button>
               </div>
 
+              {/* Alertas de stock en resumen */}
+              {hayProductosSinStock && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle size={16} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-xs text-red-700 dark:text-red-300">
+                      <p className="font-semibold mb-1">Problemas de inventario detectados</p>
+                      <p>Algunos productos no tienen suficiente stock. Revisa las cantidades antes de continuar.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
-                onClick={() => router.push("/checkout")}
-                className="bg-green-400 text-black font-black py-4 rounded-xl hover:bg-green-300 transition text-base"
+                onClick={() => {
+                  if (hayProductosSinStock) {
+                    // Mostrar alerta si hay problemas de stock
+                    alert("No puedes proceder al checkout. Algunos productos no tienen suficiente stock disponible.");
+                    return;
+                  }
+                  router.push("/checkout");
+                }}
+                disabled={hayProductosSinStock}
+                className={`font-black py-4 rounded-xl transition text-base ${
+                  hayProductosSinStock
+                    ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
+                    : 'bg-green-400 text-black hover:bg-green-300'
+                }`}
               >
-                Proceder al pago →
+                {hayProductosSinStock ? (
+                  <>
+                    <AlertTriangle size={16} className="inline mr-2" />
+                    Revisar inventario
+                  </>
+                ) : (
+                  'Proceder al pago →'
+                )}
               </button>
 
               <Link
@@ -161,26 +245,29 @@ export default function Carrito() {
   )
 }
 
-function CantidadControl({ item }) {
+function CantidadControl({ item, mostrarAlertaStock }) {
+  const { actualizarCantidad, eliminarProducto } = useCarrito()
+
   const restarCantidad = () => {
     if (item.cantidad === 1) {
-      useCarrito.getState().eliminarProducto(item.id)
+      eliminarProducto(item.id)
     } else {
-      useCarrito.setState((state) => ({
-        items: state.items.map((i) =>
-          i.id === item.id ? { ...i, cantidad: i.cantidad - 1 } : i
-        ),
-      }))
+      actualizarCantidad(item.id, item.cantidad - 1)
     }
   }
 
   const sumarCantidad = () => {
-    useCarrito.setState((state) => ({
-      items: state.items.map((i) =>
-        i.id === item.id ? { ...i, cantidad: i.cantidad + 1 } : i
-      ),
-    }))
+    // Verificar stock antes de sumar
+    if (!item.stock || item.cantidad >= item.stock) {
+      mostrarAlertaStock(item.id, `Stock máximo alcanzado (${item.stock || 0} disponibles)`)
+      return
+    }
+    
+    actualizarCantidad(item.id, item.cantidad + 1)
   }
+
+  const puedeAumentar = item.stock && item.cantidad < item.stock
+  const tieneStock = item.stock && item.stock > 0
 
   return (
     <>
@@ -191,11 +278,19 @@ function CantidadControl({ item }) {
       >
         <Minus size={16} />
       </button>
-      <span className="text-zinc-900 dark:text-white font-bold w-8 text-center text-sm" aria-live="polite">{item.cantidad}</span>
+      <span className="text-zinc-900 dark:text-white font-bold w-8 text-center text-sm" aria-live="polite">
+        {item.cantidad}
+      </span>
       <button 
         onClick={sumarCantidad} 
+        disabled={!puedeAumentar}
         aria-label={`Aumentar cantidad de ${item.nombre}`}
-        className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition p-2 min-w-[40px] min-h-[40px] flex items-center justify-center"
+        className={`p-2 min-w-[40px] min-h-[40px] flex items-center justify-center transition ${
+          puedeAumentar
+            ? 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+            : 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed'
+        }`}
+        title={!puedeAumentar ? `Stock máximo: ${item.stock || 0}` : ''}
       >
         <Plus size={16} />
       </button>

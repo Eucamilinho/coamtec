@@ -22,10 +22,12 @@ import {
   X,
   ChevronLeft,
   ZoomIn,
+  AlertTriangle,
+  Package,
 } from "lucide-react";
 
 export default function DetalleProductoClient({ producto, relacionados = [] }) {
-  const agregarProducto = useCarrito((state) => state.agregarProducto);
+  const { agregarProducto, puedeAgregarProducto, items } = useCarrito();
   const { items: wishlistItems, toggleWishlist } = useWishlist();
   const setCompraRapida = useCompraRapida((store) => store.setItems);
 
@@ -33,6 +35,7 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
   const [imagenActiva, setImagenActiva] = useState(0);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [stockError, setStockError] = useState(null);
 
   const router = useRouter();
   
@@ -41,6 +44,16 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
   }, []);
 
   const enWishlist = mounted && wishlistItems.some((item) => item.id === producto?.id);
+
+  // Información de stock
+  const enCarrito = items.find(item => item.id === producto?.id);
+  const cantidadEnCarrito = enCarrito ? enCarrito.cantidad : 0;
+  const stockDisponible = (producto?.stock || 0) - cantidadEnCarrito;
+  const tieneStock = producto?.stock && producto.stock > 0;
+  const stockSuficiente = stockDisponible >= cantidad;
+
+  // Ajustar cantidad máxima según stock disponible
+  const cantidadMaxima = Math.min(stockDisponible, 10); // máximo 10 unidades por compra
 
   if (!producto) return null;
 
@@ -57,7 +70,29 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
   const ahorro = Math.max(0, Number(producto.precio) - Number(precioFinal));
 
   const agregarAlCarrito = () => {
+    // Validar stock antes de agregar
+    if (!tieneStock) {
+      setStockError("Producto sin stock");
+      setTimeout(() => setStockError(null), 3000);
+      return;
+    }
+    
+    if (!stockSuficiente) {
+      setStockError(`Solo quedan ${stockDisponible} unidades disponibles`);
+      setTimeout(() => setStockError(null), 3000);
+      return;
+    }
+
+    // Agregar la cantidad seleccionada
     for (let index = 0; index < cantidad; index += 1) {
+      const verificacion = puedeAgregarProducto(producto);
+      if (!verificacion.puede) {
+        if (index === 0) {
+          setStockError(verificacion.razon);
+          setTimeout(() => setStockError(null), 3000);
+        }
+        break;
+      }
       agregarProducto({ ...producto, precio: precioFinal });
     }
   };
@@ -216,11 +251,29 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
                 )}
               </div>
 
-              <p className={`text-sm font-semibold ${producto.stock > 0 ? "text-emerald-500" : "text-red-500"}`}>
-                {producto.stock > 0 ? `Disponible (${producto.stock} unidades)` : "Sin stock"}
-              </p>
+              <div className="space-y-3">
+                <p className={`text-sm font-semibold ${tieneStock ? "text-emerald-500" : "text-red-500"}`}>
+                  {tieneStock 
+                    ? `Disponible (${producto.stock} unidades${cantidadEnCarrito > 0 ? ` - ${cantidadEnCarrito} en carrito` : ''})` 
+                    : "Sin stock"
+                  }
+                </p>
+                
+                {cantidadEnCarrito > 0 && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    {stockDisponible} disponible{stockDisponible !== 1 ? 's' : ''} para agregar
+                  </p>
+                )}
+                
+                {stockError && (
+                  <div className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 rounded px-3 py-2">
+                    <AlertTriangle size={12} />
+                    <span>{stockError}</span>
+                  </div>
+                )}
+              </div>
 
-              {producto.stock > 0 ? (
+              {tieneStock && stockDisponible > 0 ? (
                 <>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-zinc-600 dark:text-zinc-400">Cantidad:</span>
@@ -228,8 +281,13 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
                       <button
                         type="button"
                         aria-label="Disminuir cantidad"
+                        disabled={cantidad <= 1}
                         onClick={() => setCantidad((value) => Math.max(1, value - 1))}
-                        className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        className={`inline-flex h-11 w-11 items-center justify-center transition ${
+                          cantidad <= 1 
+                            ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed' 
+                            : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        }`}
                       >
                         <Minus size={18} aria-hidden="true" />
                       </button>
@@ -237,32 +295,58 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
                       <button
                         type="button"
                         aria-label="Aumentar cantidad"
-                        onClick={() => setCantidad((value) => value + 1)}
-                        className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        disabled={cantidad >= cantidadMaxima}
+                        onClick={() => setCantidad((value) => Math.min(cantidadMaxima, value + 1))}
+                        className={`inline-flex h-11 w-11 items-center justify-center transition ${
+                          cantidad >= cantidadMaxima 
+                            ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed' 
+                            : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        }`}
+                        title={cantidad >= cantidadMaxima ? `Máximo: ${cantidadMaxima} unidades` : ''}
                       >
                         <Plus size={18} aria-hidden="true" />
                       </button>
                     </div>
+                    {cantidadMaxima < 10 && (
+                      <span className="text-xs text-zinc-500">
+                        Máx: {cantidadMaxima}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
                     <button
                       type="button"
                       onClick={agregarAlCarrito}
-                      className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-black text-white transition hover:bg-green-700"
+                      disabled={!stockSuficiente}
+                      className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black transition ${
+                        stockSuficiente
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
+                      }`}
+                      title={!stockSuficiente ? 'Stock insuficiente' : ''}
                     >
-                      <ShoppingCart size={17} aria-hidden="true" /> Añadir al carrito
+                      <ShoppingCart size={17} aria-hidden="true" /> 
+                      {stockSuficiente ? 'Añadir al carrito' : 'Stock insuficiente'}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => {
-                        setCompraRapida([{ ...producto, precio: precioFinal }]);
+                        if (!stockSuficiente) return;
+                        setCompraRapida([{ ...producto, precio: precioFinal, cantidad }]);
                         router.push("/checkout/rapido");
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-green-600 px-5 py-3 text-sm font-bold text-green-600 transition hover:bg-green-50 dark:border-green-500 dark:text-green-500 dark:hover:bg-green-500/10"
+                      disabled={!stockSuficiente}
+                      className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold transition ${
+                        stockSuficiente
+                          ? 'border-green-600 text-green-600 hover:bg-green-50 dark:border-green-500 dark:text-green-500 dark:hover:bg-green-500/10'
+                          : 'border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 cursor-not-allowed'
+                      }`}
+                      title={!stockSuficiente ? 'Stock insuficiente' : ''}
                     >
-                      <Zap size={16} aria-hidden="true" /> Comprar ahora
+                      <Zap size={16} aria-hidden="true" /> 
+                      {stockSuficiente ? 'Comprar ahora' : 'Sin stock'}
                     </button>
 
                     <button
@@ -281,13 +365,24 @@ export default function DetalleProductoClient({ producto, relacionados = [] }) {
                   </div>
                 </>
               ) : (
-                <button
-                  disabled
-                  aria-disabled="true"
-                  className="w-full max-w-xs rounded-xl bg-zinc-100 dark:bg-zinc-800 py-3 text-sm font-semibold text-zinc-500"
-                >
-                  No disponible
-                </button>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+                    <Package size={20} className="text-zinc-500" />
+                    <div>
+                      <p className="font-semibold text-zinc-700 dark:text-zinc-300">Producto sin stock</p>
+                      <p className="text-xs text-zinc-500">Te notificaremos cuando esté disponible</p>
+                    </div>
+                  </div>
+                  
+                  <button
+                    disabled
+                    aria-disabled="true"
+                    className="w-full max-w-xs rounded-xl bg-zinc-200 dark:bg-zinc-700 py-3 text-sm font-semibold text-zinc-500 cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <AlertTriangle size={16} />
+                    No disponible
+                  </button>
+                </div>
               )}
             </div>
 

@@ -179,6 +179,38 @@ export default function Navbar() {
                     </span>
                   )}
                 </button>
+                
+                {/* Wishlist dropdown */}
+                {wishlistAbierta && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                      <h3 className="text-zinc-800 dark:text-white font-bold text-sm">Mis Favoritos</h3>
+                      <button onClick={() => setWishlistAbierta(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    {wishlist.length === 0 ? (
+                      <div className="px-4 py-10 text-center text-zinc-400 dark:text-zinc-500 text-sm">
+                        No tienes favoritos aún
+                      </div>
+                    ) : (
+                      wishlist.map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">
+                          <Link href={getProductUrl(p)} onClick={() => setWishlistAbierta(false)} className="flex items-center gap-3 flex-1 min-w-0">
+                            <img src={p.imagen} alt={p.nombre} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-zinc-800 dark:text-white text-sm truncate">{p.nombre}</p>
+                              <p className="text-green-500 text-sm font-bold">${precioFinal(p).toLocaleString()}</p>
+                            </div>
+                          </Link>
+                          <button onClick={() => toggleWishlist(p)} className="text-zinc-400 hover:text-red-500 transition flex-shrink-0">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Carrito */}
@@ -345,38 +377,6 @@ export default function Navbar() {
             )}
           </div>
         )}
-
-        {/* Wishlist dropdown */}
-        {wishlistAbierta && (
-          <div className="absolute right-4 top-full mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50">
-            <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-              <h3 className="text-zinc-800 dark:text-white font-bold text-sm">Mis Favoritos</h3>
-              <button onClick={() => setWishlistAbierta(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition">
-                <X size={14} />
-              </button>
-            </div>
-            {wishlist.length === 0 ? (
-              <div className="px-4 py-10 text-center text-zinc-400 dark:text-zinc-500 text-sm">
-                No tienes favoritos aún
-              </div>
-            ) : (
-              wishlist.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">
-                  <Link href={getProductUrl(p)} onClick={() => setWishlistAbierta(false)} className="flex items-center gap-3 flex-1 min-w-0">
-                    <img src={p.imagen} alt={p.nombre} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-zinc-800 dark:text-white text-sm truncate">{p.nombre}</p>
-                      <p className="text-green-500 text-sm font-bold">${precioFinal(p).toLocaleString()}</p>
-                    </div>
-                  </Link>
-                  <button onClick={() => toggleWishlist(p)} className="text-zinc-400 hover:text-red-500 transition flex-shrink-0">
-                    <X size={14} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        )}
       </nav>
 
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -466,7 +466,11 @@ export default function Navbar() {
             </Link>
 
             <button
-              onClick={() => { setMenuAbierto(false); setWishlistAbierta(true) }}
+              onClick={() => { 
+                setMenuAbierto(false); 
+                // En móvil, redirigir a una página de favoritos en lugar del dropdown
+                router.push('/favoritos');
+              }}
               className="flex items-center justify-between py-2.5 border-b border-zinc-100 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 w-full text-left text-sm"
             >
               <div className="flex items-center gap-3">
