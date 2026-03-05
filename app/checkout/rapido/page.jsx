@@ -1,148 +1,299 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useCompraRapida } from "../../store/compraRapidaStore"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { ChevronRight, Lock, Truck, Shield, CreditCard, Building2, Wallet, ArrowRight, CheckCircle } from "lucide-react"
-import { supabase } from "../../lib/supabase"
+import { useState, useRef, useEffect } from "react";
+import { useCompraRapida } from "../../store/compraRapidaStore";
+import { supabase } from "../../lib/supabase";
+import Link from "next/link";
+import Image from "next/image";
+import {
+  Lock,
+  Truck,
+  Shield,
+  CreditCard,
+  Building2,
+  Wallet,
+  ArrowLeft,
+  Package,
+  Phone,
+  Mail,
+  MapPin,
+  CheckCircle,
+  AlertTriangle,
+  ChevronDown,
+  Search,
+  ChevronRight
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 
-// Datos de Colombia
-const DEPARTAMENTOS_CIUDADES = {
-  "Amazonas": ["Leticia", "Puerto Nariño"],
-  "Antioquia": ["Medellín", "Bello", "Itagüí", "Envigado", "Apartadó", "Turbo", "Rionegro", "Sabaneta"],
-  "Arauca": ["Arauca", "Tame", "Saravena"],
-  "Atlántico": ["Barranquilla", "Soledad", "Malambo", "Sabanalarga"],
-  "Bolívar": ["Cartagena", "Magangué", "Turbaco", "Arjona"],
-  "Boyacá": ["Tunja", "Duitama", "Sogamoso", "Chiquinquirá"],
-  "Caldas": ["Manizales", "Villamaría", "La Dorada", "Chinchiná"],
-  "Caquetá": ["Florencia", "San Vicente del Caguán"],
-  "Casanare": ["Yopal", "Aguazul", "Villanueva"],
-  "Cauca": ["Popayán", "Santander de Quilichao"],
-  "Cesar": ["Valledupar", "Aguachica", "Bosconia"],
-  "Chocó": ["Quibdó", "Istmina"],
-  "Córdoba": ["Montería", "Cereté", "Sahagún"],
-  "Cundinamarca": ["Bogotá", "Soacha", "Girardot", "Zipaquirá", "Fusagasugá", "Chía", "Facatativá"],
-  "Guainía": ["Inírida"],
-  "Guaviare": ["San José del Guaviare"],
-  "Huila": ["Neiva", "Pitalito", "Garzón"],
-  "La Guajira": ["Riohacha", "Maicao", "Uribia"],
-  "Magdalena": ["Santa Marta", "Ciénaga", "Fundación"],
-  "Meta": ["Villavicencio", "Acacías", "Granada"],
-  "Nariño": ["Pasto", "Tumaco", "Ipiales"],
-  "Norte de Santander": ["Cúcuta", "Ocaña", "Pamplona", "Villa del Rosario"],
-  "Putumayo": ["Mocoa", "Puerto Asís"],
-  "Quindío": ["Armenia", "Calarcá", "La Tebaida"],
-  "Risaralda": ["Pereira", "Dosquebradas", "Santa Rosa de Cabal"],
-  "San Andrés y Providencia": ["San Andrés", "Providencia"],
-  "Santander": ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "San Gil", "Socorro", "Barbosa", "Málaga"],
-  "Sucre": ["Sincelejo", "Corozal"],
-  "Tolima": ["Ibagué", "Espinal", "Melgar"],
-  "Valle del Cauca": ["Cali", "Palmira", "Buenaventura", "Tuluá", "Cartago"],
-  "Vaupés": ["Mitú"],
-  "Vichada": ["Puerto Carreño"]
-}
-
-// Zonas de envío desde Bucaramanga
+// Sistema de zonificación para envíos desde Bucaramanga
 const ZONAS_ENVIO = {
+  // Zona 1: Área metropolitana y Santander (local)
   zona1: {
-    nombre: "Zona 1 - Área Metropolitana",
-    ciudades: ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"],
-    precio: 8000,
-    tiempo: "1-2 días"
+    departamentos: ["Santander"],
+    ciudades: ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "Socorro", "San Gil"],
+    factor: 1.0,
+    tiempoBase: "1 día hábil"
   },
+  // Zona 2: Departamentos vecinos
   zona2: {
-    nombre: "Zona 2 - Santander",
-    ciudades: ["Barrancabermeja", "San Gil", "Socorro", "Barbosa", "Málaga"],
-    precio: 12000,
-    tiempo: "2-3 días"
+    departamentos: ["Norte de Santander", "Boyacá", "Cesar"],
+    factor: 1.4,
+    tiempoBase: "1-2 días hábiles"
   },
+  // Zona 3: Centro del país (principales ciudades)
   zona3: {
-    nombre: "Zona 3 - Ciudades Principales",
-    ciudades: ["Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena"],
-    precio: 15000,
-    tiempo: "3-4 días"
+    departamentos: ["Cundinamarca", "Antioquia", "Caldas", "Risaralda", "Quindío", "Tolima", "Huila"],
+    factor: 1.8,
+    tiempoBase: "2-3 días hábiles"
   },
+  // Zona 4: Costa Atlántica
   zona4: {
-    nombre: "Zona 4 - Capitales Departamentales",
-    ciudades: ["Ibagué", "Pereira", "Manizales", "Armenia", "Neiva", "Pasto", "Cúcuta", "Valledupar", "Montería", "Sincelejo", "Santa Marta"],
-    precio: 18000,
-    tiempo: "4-5 días"
+    departamentos: ["Atlántico", "Bolívar", "Magdalena", "La Guajira", "Córdoba", "Sucre"],
+    factor: 2.2,
+    tiempoBase: "2-4 días hábiles"
   },
+  // Zona 5: Sur y occidente del país
   zona5: {
-    nombre: "Zona 5 - Ciudades Intermedias",
-    ciudades: ["Villavicencio", "Tunja", "Popayán", "Florencia", "Yopal", "Mocoa", "Arauca", "Quibdó", "Riohacha"],
-    precio: 22000,
-    tiempo: "5-6 días"
+    departamentos: ["Valle del Cauca", "Cauca", "Nariño", "Meta", "Casanare"],
+    factor: 2.8,
+    tiempoBase: "3-5 días hábiles"
   },
+  // Zona 6: Regiones apartadas
   zona6: {
-    nombre: "Zona 6 - Municipios Apartados",
-    ciudades: [], // Todas las demás ciudades
-    precio: 28000,
-    tiempo: "6-8 días"
+    departamentos: ["Chocó", "Amazonas", "Caquetá", "Putumayo", "Arauca", "Guainía", "Guaviare", "Vaupés", "Vichada"],
+    factor: 4.0,
+    tiempoBase: "5-8 días hábiles"
   }
-}
+};
+
+// Función para determinar zona de envío
+const obtenerZonaEnvio = (departamento, ciudad) => {
+  // Primero verificar si es Bucaramanga mismo (zona especial)
+  if (departamento === "Santander" && ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"].includes(ciudad)) {
+    return { ...ZONAS_ENVIO.zona1, zona: "zona1", factor: 0.8 }; // Descuento local
+  }
+  
+  // Buscar en qué zona está el departamento
+  for (const [zonaKey, zonaData] of Object.entries(ZONAS_ENVIO)) {
+    if (zonaData.departamentos.includes(departamento)) {
+      return { ...zonaData, zona: zonaKey };
+    }
+  }
+  
+  // Por defecto, zona 6 (más cara) para departamentos no clasificados
+  return { ...ZONAS_ENVIO.zona6, zona: "zona6" };
+};
+
+// Simulación de APIs de empresas de mensajería con precios realistas
+const cotizarServientrega = async (origen, destino, departamento, peso, valorDeclarado) => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 8500; // Precio base más realista
+  const weightFactor = Math.ceil(peso / 1000) * 1800;
+  const zoneFactor = zonaDestino.factor;
+  const insuranceFactor = valorDeclarado > 200000 ? 1.15 : (valorDeclarado > 100000 ? 1.08 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
+  
+  return {
+    empresa: "Servientrega",
+    precio: Math.max(precio, 6500), // Mínimo $6.500
+    tiempoEntrega: zonaDestino.tiempoBase,
+    confiable: true,
+    zona: zonaDestino.zona
+  };
+};
+
+const cotizarEnvia = async (origen, destino, departamento, peso, valorDeclarado) => {
+  await new Promise(resolve => setTimeout(resolve, 600));
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 7200; // Envía suele ser más económico
+  const weightFactor = Math.ceil(peso / 1000) * 1600;
+  const zoneFactor = zonaDestino.factor;
+  const insuranceFactor = valorDeclarado > 200000 ? 1.12 : (valorDeclarado > 100000 ? 1.06 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
+  
+  return {
+    empresa: "Envía",
+    precio: Math.max(precio, 5800), // Mínimo $5.800
+    tiempoEntrega: zonaDestino.tiempoBase,
+    confiable: true,
+    zona: zonaDestino.zona
+  };
+};
+
+const cotizarInterrapidisimo = async (origen, destino, departamento, peso, valorDeclarado) => {
+  await new Promise(resolve => setTimeout(resolve, 700));
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 9800; // Más caro pero más rápido
+  const weightFactor = Math.ceil(peso / 1000) * 2000;
+  const zoneFactor = zonaDestino.factor * 0.85; // Descuento por velocidad
+  const insuranceFactor = valorDeclarado > 200000 ? 1.18 : (valorDeclarado > 100000 ? 1.10 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
+  
+  // Ajustar tiempo de entrega (más rápido)
+  let tiempoAjustado = zonaDestino.tiempoBase;
+  if (zonaDestino.zona === "zona2" || zonaDestino.zona === "zona3") {
+    tiempoAjustado = "1-2 días hábiles";
+  } else if (zonaDestino.zona === "zona4" || zonaDestino.zona === "zona5") {
+    tiempoAjustado = "2-3 días hábiles";
+  }
+  
+  return {
+    empresa: "Interrapidísimo",
+    precio: Math.max(precio, 7500), // Mínimo $7.500
+    tiempoEntrega: tiempoAjustado,
+    confiable: true,
+    zona: zonaDestino.zona
+  };
+};
 
 // Componente SearchableSelect
-function SearchableSelect({ label, value, onChange, options, placeholder, required }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [search, setSearch] = useState("")
-  
-  const filteredOptions = options.filter(option =>
-    option.toLowerCase().includes(search.toLowerCase())
-  )
-  
+function SearchableSelect({ options, value, onChange, placeholder, disabled, error, label }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filteredOptions, setFilteredOptions] = useState(options);
+  const containerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const filtered = options.filter(option =>
+      option.toLowerCase().includes(search.toLowerCase())
+    );
+    setFilteredOptions(filtered);
+  }, [search, options]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (option) => {
+    onChange({ target: { name: label.toLowerCase(), value: option } });
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  const displayValue = value || placeholder;
+
   return (
-    <div className="relative flex flex-col gap-1">
-      <label className="text-zinc-500 text-sm font-medium">{label} {required && "*"}</label>
-      <div className="relative">
-        <input
-          type="text"
-          value={isOpen ? search : value}
-          onChange={(e) => {
-            setSearch(e.target.value)
-            if (!isOpen) setIsOpen(true)
-          }}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition w-full"
-        />
-        {isOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-            <div className="absolute top-full left-0 right-0 z-20 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl mt-1 max-h-48 overflow-y-auto shadow-lg">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => {
-                      onChange(option)
-                      setSearch("")
-                      setIsOpen(false)
-                    }}
-                    className="w-full text-left px-4 py-3 text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-700 transition text-sm"
-                  >
-                    {option}
-                  </button>
-                ))
-              ) : (
-                <div className="px-4 py-3 text-zinc-400 text-sm">No se encontraron resultados</div>
-              )}
-            </div>
-          </>
+    <div ref={containerRef} className="relative">
+      <div
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen(!isOpen);
+            setTimeout(() => inputRef.current?.focus(), 100);
+          }
+        }}
+        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white cursor-pointer transition flex items-center justify-between ${
+          disabled 
+            ? 'opacity-50 cursor-not-allowed' 
+            : 'hover:border-green-400 focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-500'
+        } ${
+          error ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+        }`}
+      >
+        {isOpen ? (
+          <div className="flex items-center gap-2 flex-1">
+            <Search size={16} className="text-zinc-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Buscar ${label.toLowerCase()}...`}
+              className="flex-1 outline-none bg-transparent text-zinc-900 dark:text-white placeholder-zinc-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        ) : (
+          <span className={value ? 'text-zinc-900 dark:text-white' : 'text-zinc-500'}>
+            {displayValue}
+          </span>
         )}
+        <ChevronDown 
+          size={16} 
+          className={`text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        />
       </div>
+
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <div
+                key={option}
+                onClick={() => handleSelect(option)}
+                className={`px-4 py-3 cursor-pointer transition hover:bg-zinc-50 dark:hover:bg-zinc-700 ${
+                  value === option ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'text-zinc-900 dark:text-white'
+                }`}
+              >
+                {option}
+              </div>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-zinc-500 text-center">
+              No se encontraron resultados
+            </div>
+          )}
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
+// Ciudades donde está disponible contraentrega
+const CIUDADES_CONTRAENTREGA = ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"];
+
+// Datos de departamentos y ciudades de Colombia
+const DEPARTAMENTOS_CIUDADES = {
+  "Santander": ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "Socorro", "San Gil"],
+  "Cundinamarca": ["Bogotá", "Soacha", "Facatativá", "Chía", "Zipaquirá", "Fusagasugá", "Girardot"],
+  "Antioquia": ["Medellín", "Bello", "Itagüí", "Envigado", "Sabaneta", "Apartadó", "Turbo"],
+  "Valle del Cauca": ["Cali", "Palmira", "Tuluá", "Cartago", "Buga", "Jamundí", "Yumbo"],
+  "Atlántico": ["Barranquilla", "Soledad", "Malambo", "Sabanalarga", "Puerto Colombia"],
+  "Bolívar": ["Cartagena", "Magangué", "Turbaco", "Arjona", "El Carmen de Bolívar"],
+  "Norte de Santander": ["Cúcuta", "Villa del Rosario", "Los Patios", "Pamplona", "Ocaña"],
+  "Córdoba": ["Montería", "Lorica", "Cereté", "Sahagún", "Planeta Rica"],
+  "Sucre": ["Sincelejo", "Corozal", "Sampués", "San Marcos", "Tolú"],
+  "Magdalena": ["Santa Marta", "Ciénaga", "Fundación", "Zona Bananera", "Aracataca"],
+  "La Guajira": ["Riohacha", "Maicao", "Valledupar", "Fonseca", "San Juan del Cesar"],
+  "Cesar": ["Valledupar", "Aguachica", "Bosconia", "Codazzi", "La Jagua de Ibirico"],
+  "Huila": ["Neiva", "Pitalito", "Garzón", "La Plata", "Campoalegre"],
+  "Tolima": ["Ibagué", "Espinal", "Melgar", "Honda", "Chaparral"],
+  "Risaralda": ["Pereira", "Dosquebradas", "Santa Rosa de Cabal", "La Virginia"],
+  "Caldas": ["Manizales", "Villamaría", "Chinchiná", "La Dorada", "Riosucio"],
+  "Quindío": ["Armenia", "Calarcá", "La Tebaida", "Montenegro", "Quimbaya"],
+  "Meta": ["Villavicencio", "Acacías", "Granada", "San Martín", "Puerto López"],
+  "Casanare": ["Yopal", "Aguazul", "Villanueva", "Monterrey", "Tauramena"],
+  "Boyacá": ["Tunja", "Duitama", "Sogamoso", "Chiquinquirá", "Paipa"],
+  "Nariño": ["Pasto", "Tumaco", "Ipiales", "Túquerres", "Samaniego"],
+  "Cauca": ["Popayán", "Santander de Quilichao", "Puerto Tejada", "Patía"],
+  "Caquetá": ["Florencia", "San Vicente del Caguán", "La Montañita", "Curillo"],
+  "Putumayo": ["Mocoa", "Puerto Asís", "Orito", "Valle del Guamuez"],
+  "Amazonas": ["Leticia", "Puerto Nariño", "La Chorrera"],
+  "Arauca": ["Arauca", "Saravena", "Tame", "Fortul"],
+  "Chocó": ["Quibdó", "Istmina", "Condoto", "Acandí"],
+  "Guainía": ["Inírida", "Barranco Minas"],
+  "Guaviare": ["San José del Guaviare", "Calamar"],
+  "Vaupés": ["Mitú", "Carurú"],
+  "Vichada": ["Puerto Carreño", "La Primavera"]
+};
+
 export default function CheckoutRapido() {
-  const { items, limpiar, actualizarCantidad } = useCompraRapida()
-  const router = useRouter()
-  const [cargando, setCargando] = useState(false)
-  const [error, setError] = useState("")
-  const [cotizacionEnvio, setCotizacionEnvio] = useState(null)
-  
+  const { items, limpiar, actualizarCantidad } = useCompraRapida();
   const [formulario, setFormulario] = useState({
     nombre: "",
     email: "",
@@ -151,51 +302,136 @@ export default function CheckoutRapido() {
     ciudad: "",
     direccion: "",
     referencia: "",
-    metodoPago: "",
-  })
+    metodoPago: "contraentrega",
+  });
 
-  const subtotal = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
-  const costoEnvio = cotizacionEnvio?.precio || 0
-  const total = subtotal + costoEnvio
+  const [cargando, setCargando] = useState(false);
+  const [errores, setErrores] = useState({});
+  const [ciudadesDisponibles, setCiudadesDisponibles] = useState([]);
+  const [opcionesEnvio, setOpcionesEnvio] = useState([]);
+  const [cotizandoEnvio, setCotizandoEnvio] = useState(false);
+  const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
+  const router = useRouter();
 
-  // Obtener zona de envío cuando cambia la ciudad
-  useEffect(() => {
-    if (formulario.ciudad) {
-      const zona = Object.entries(ZONAS_ENVIO).find(([key, zona]) => {
-        if (key === 'zona6') return true // zona6 es para todas las demás ciudades
-        return zona.ciudades.includes(formulario.ciudad)
-      })
-      
-      if (zona) {
-        setCotizacionEnvio({
-          zona: zona[0],
-          ...zona[1]
-        })
-      }
-    } else {
-      setCotizacionEnvio(null)
-    }
-  }, [formulario.ciudad])
+  // Función para calcular peso total del pedido
+  const calcularPesoTotal = (items) => {
+    return items.reduce((total, item) => {
+      // Usar peso real del producto si está disponible, sino usar estimado
+      const pesoProducto = item.peso && item.peso > 0 ? parseInt(item.peso) : 500; // 500g por defecto
+      return total + (pesoProducto * item.cantidad);
+    }, 0);
+  };
 
-  // Verificar si contraentrega está disponible
-  const contraentregaDisponible = ['Bucaramanga', 'Floridablanca', 'Girón', 'Piedecuesta'].includes(formulario.ciudad)
-
-  const handleChange = (field, value) => {
-    setFormulario({ ...formulario, [field]: value })
-  }
-
-  const handleSubmit = async () => {
-    setCargando(true)
-    setError("")
+  const subtotal = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+  const envio = envioSeleccionado ? envioSeleccionado.precio : (subtotal >= 150000 ? 0 : 15000);
+  const total = subtotal + envio;
+  
+  // Verificar si contraentrega está disponible para la ciudad seleccionada
+  const contraentregaDisponible = CIUDADES_CONTRAENTREGA.includes(formulario.ciudad);
+  
+  // Función para cotizar envío con todas las empresas
+  const cotizarEnvios = async (ciudad, departamento) => {
+    if (!ciudad || !departamento) return;
+    
+    setCotizandoEnvio(true);
+    setOpcionesEnvio([]);
+    setEnvioSeleccionado(null);
     
     try {
-      // Validaciones
-      if (!formulario.nombre || !formulario.email || !formulario.telefono || !formulario.ciudad || !formulario.direccion || !formulario.metodoPago) {
-        setError("Por favor completa todos los campos obligatorios")
-        setCargando(false)
-        return
+      const pesoTotal = calcularPesoTotal(items);
+      const valorDeclarado = subtotal;
+      const origen = "Bucaramanga"; // Ciudad origen de la tienda
+      const destino = ciudad;
+      
+      // Cotizar con todas las empresas en paralelo
+      const [servientrega, envia, interrapidisimo] = await Promise.all([
+        cotizarServientrega(origen, destino, departamento, pesoTotal, valorDeclarado),
+        cotizarEnvia(origen, destino, departamento, pesoTotal, valorDeclarado),
+        cotizarInterrapidisimo(origen, destino, departamento, pesoTotal, valorDeclarado)
+      ]);
+      
+      const opciones = [servientrega, envia, interrapidisimo]
+        .filter(opcion => opcion.confiable)
+        .sort((a, b) => a.precio - b.precio); // Ordenar por precio
+      
+      setOpcionesEnvio(opciones);
+      
+      // Auto-seleccionar la opción más económica si hay opciones disponibles
+      if (opciones.length > 0) {
+        setEnvioSeleccionado(opciones[0]);
       }
+      
+    } catch (error) {
+      console.error('Error cotizando envíos:', error);
+      // Fallback a precio fijo si falla la cotización
+      const fallback = {
+        empresa: "Envío estándar",
+        precio: subtotal >= 150000 ? 0 : 15000,
+        tiempoEntrega: "3-5 días hábiles",
+        confiable: true
+      };
+      setOpcionesEnvio([fallback]);
+      setEnvioSeleccionado(fallback);
+    } finally {
+      setCotizandoEnvio(false);
+    }
+  };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Si se cambia el departamento, actualizar las ciudades y limpiar la ciudad seleccionada
+    if (name === "departamento") {
+      setCiudadesDisponibles(DEPARTAMENTOS_CIUDADES[value] || []);
+      setFormulario(prev => ({ ...prev, departamento: value, ciudad: "", metodoPago: "transferencia" }));
+    }
+    // Si se cambia la ciudad, verificar si contraentrega está disponible
+    else if (name === "ciudad") {
+      const contraentregaDisponible = CIUDADES_CONTRAENTREGA.includes(value);
+      setFormulario(prev => ({
+        ...prev,
+        ciudad: value,
+        metodoPago: !contraentregaDisponible && prev.metodoPago === "contraentrega" ? "transferencia" : prev.metodoPago
+      }));      
+      // Cotizar envío cuando se selecciona la ciudad
+      cotizarEnvios(value, formulario.departamento);      
+    }
+    else {
+      setFormulario({ ...formulario, [name]: value });
+    }
+    
+    // Limpiar error del campo al empezar a escribir
+    if (errores[name]) {
+      setErrores({ ...errores, [name]: "" });
+    }
+  };
+
+  const validarFormulario = () => {
+    const nuevosErrores = {};
+    
+    if (!formulario.nombre.trim()) nuevosErrores.nombre = "Nombre requerido";
+    if (!formulario.email.trim()) nuevosErrores.email = "Email requerido";
+    if (!formulario.telefono.trim()) nuevosErrores.telefono = "Teléfono requerido";
+    if (!formulario.departamento.trim()) nuevosErrores.departamento = "Departamento requerido";
+    if (!formulario.ciudad.trim()) nuevosErrores.ciudad = "Ciudad requerida";
+    if (!formulario.direccion.trim()) nuevosErrores.direccion = "Dirección requerida";
+    
+    // Validar email básico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formulario.email && !emailRegex.test(formulario.email)) {
+      nuevosErrores.email = "Email inválido";
+    }
+    
+    setErrores(nuevosErrores);
+    return Object.keys(nuevosErrores).length === 0;
+  };
+
+  const procesarPedido = async () => {
+    if (!validarFormulario()) return;
+    
+    setCargando(true);
+    
+    try {
       // Validar stock actual antes de proceder
       console.log("Validando stock antes del pago...");
       const stockErrors = [];
@@ -227,7 +463,7 @@ export default function CheckoutRapido() {
         }
       }
       
-      // Si hay errores de stock, mostrar alerta
+      // Si hay errores de stock, mostrar alerta con opciones
       if (stockErrors.length > 0) {
         const problemas = stockErrors.map(error => {
           if (typeof error === 'string') return error;
@@ -236,30 +472,31 @@ export default function CheckoutRapido() {
         
         const accion = confirm(
           `⚠️ PROBLEMA DE STOCK:\n\n${problemas}\n\n` +
-          `¿Quieres ajustar automáticamente la cantidad a la disponible?\n\n` +
-          `• OK: Ajustar cantidad automáticamente\n` +
+          `¿Quieres ajustar automáticamente las cantidades a las disponibles?\n\n` +
+          `• OK: Ajustar cantidades automáticamente\n` +
           `• Cancelar: Cancelar compra`
         );
         
         if (accion) {
-          // Para compra rápida, ajustamos la cantidad del único item
-          const error = stockErrors[0];
-          if (error.disponible > 0) {
-            // Actualizar la cantidad en el store
-            actualizarCantidad(error.id, error.disponible);
-            alert(`✅ Cantidad ajustada a ${error.disponible} unidades disponibles.`);
-          } else {
-            setError("Producto agotado. No se puede completar la compra.");
-            setCargando(false);
-            return;
+          // Ajustar cantidades automáticamente
+          for (const error of stockErrors) {
+            if (typeof error === 'object') {
+              if (error.disponible > 0) {
+                actualizarCantidad(error.id, error.disponible);
+              }
+            }
           }
+          
+          alert('✅ Cantidades ajustadas. Puedes proceder con el pago.');
+          setCargando(false);
+          return;
         } else {
           setCargando(false);
           return;
         }
       }
-
-      // Si es contraentrega, crear pedido y redirigir al resultado
+      
+      // Si es contraentrega, solo crear pedido y redirigir
       if (formulario.metodoPago === 'contraentrega') {
         const pedidoData = {
           nombre: formulario.nombre,
@@ -270,28 +507,21 @@ export default function CheckoutRapido() {
           direccion: formulario.direccion,
           referencia: formulario.referencia,
           metodo_pago: formulario.metodoPago,
-          proveedor_envio: cotizacionEnvio?.empresa || 'Envío estándar',
-          costo_envio: costoEnvio,
-          tiempo_entrega: cotizacionEnvio?.tiempo || '6-8 días',
-          zona_envio: cotizacionEnvio?.zona || 'zona6',
+          proveedor_envio: envioSeleccionado ? envioSeleccionado.empresa : 'Envío estándar',
+          costo_envio: envio,
+          tiempo_entrega: envioSeleccionado ? envioSeleccionado.tiempoEntrega : '3-5 días hábiles',
+          zona_envio: envioSeleccionado ? envioSeleccionado.zona : 'zona3',
           subtotal,
           total,
           items,
           estado: 'pagado' // Contraentrega se considera pagado inmediatamente
         };
         
-        const { data: pedido, error: errorPedido } = await supabase
+        const { error } = await supabase
           .from('pedidos')
-          .insert([pedidoData])
-          .select()
-          .single();
+          .insert([pedidoData]);
         
-        if (errorPedido) {
-          console.error('Error al crear pedido:', errorPedido);
-          setError("Error al procesar el pedido. Intenta de nuevo.");
-          setCargando(false);
-          return;
-        }
+        if (error) throw error;
 
         // Actualizar stock para contraentrega
         try {
@@ -311,13 +541,13 @@ export default function CheckoutRapido() {
           console.error('Error actualizando stock:', stockError);
           // No fallar el pedido si hay error de stock
         }
-
+        
         limpiar();
-        router.push(`/checkout/resultado?status=contraentrega&id=${pedido.id}`);
+        router.push("/checkout/resultado?status=contraentrega");
         return;
       }
-
-      // Para otros métodos de pago (tarjetas y PSE), crear preferencia de MercadoPago
+      
+      // Para tarjetas y PSE, usar MercadoPago
       const response = await fetch('/api/crear-preferencia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -325,10 +555,10 @@ export default function CheckoutRapido() {
           items,
           formulario: {
             ...formulario,
-            envioSeleccionado: cotizacionEnvio
+            envioSeleccionado
           },
           subtotal,
-          envio: costoEnvio,
+          envio,
           total
         })
       });
@@ -345,339 +575,508 @@ export default function CheckoutRapido() {
       } else {
         throw new Error('No se recibió URL de pago');
       }
+      
     } catch (error) {
       console.error("Error procesando pedido:", error);
-      setError("Error al procesar el pedido: " + error.message);
+      alert("Error al procesar el pedido: " + error.message);
     } finally {
       setCargando(false);
     }
-  }
+  };
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center pt-20">
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-zinc-800 dark:text-white mb-4">No hay productos</h1>
-          <Link href="/productos" className="text-green-400 hover:underline">Ver productos</Link>
+      <div className="min-h-screen bg-white dark:bg-zinc-950 pt-24">
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <Package size={64} className="mx-auto mb-6 text-zinc-300 dark:text-zinc-600" />
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">
+            No hay productos seleccionados
+          </h1>
+          <p className="text-zinc-600 dark:text-zinc-400 mb-8">
+            Selecciona un producto para continuar con la compra rápida
+          </p>
+          <Link 
+            href="/productos"
+            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-xl transition"
+          >
+            Ver productos
+          </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white pt-20">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-
-        <div className="flex items-center gap-2 mb-4">
-          <Link href="/productos" className="text-zinc-400 hover:text-green-400 transition text-sm">
-            Productos
+    <div className="min-h-screen bg-white dark:bg-zinc-950 pt-24 pb-16">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link 
+            href="/productos"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition"
+          >
+            <ArrowLeft size={20} />
           </Link>
-          <ChevronRight size={14} className="text-zinc-400" />
-          <span className="text-zinc-400 text-sm">Compra rápida</span>
+          <div>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 mb-2 text-sm text-zinc-500">
+              <Link href="/productos" className="hover:text-green-500 transition">
+                Productos
+              </Link>
+              <ChevronRight size={14} />
+              <span>Compra rápida</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white">
+              Compra <span className="text-green-500">rápida</span>
+            </h1>
+            <p className="text-zinc-600 dark:text-zinc-400">
+              Completa tu información para procesar el envío
+            </p>
+          </div>
         </div>
 
-        <h1 className="text-4xl font-black mb-10">
-          Compra <span className="text-green-400">rápida</span>
-        </h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Formulario */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
-
-            {/* Información del cliente */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-green-400 text-black text-xs font-black flex items-center justify-center">1</span>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Información personal */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                <Phone size={20} className="text-green-500" />
                 Información de contacto
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-zinc-500 text-sm font-medium">Nombre completo *</label>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Nombre completo *
+                  </label>
                   <input
+                    type="text"
+                    name="nombre"
                     value={formulario.nombre}
-                    onChange={(e) => handleChange("nombre", e.target.value)}
-                    placeholder="Juan Pérez"
-                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
+                    onChange={handleChange}
+                    placeholder="Tu nombre completo"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.nombre ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
                   />
+                  {errores.nombre && (
+                    <p className="text-red-500 text-sm mt-1">{errores.nombre}</p>
+                  )}
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-zinc-500 text-sm font-medium">Email *</label>
+                
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Email *
+                  </label>
                   <input
                     type="email"
+                    name="email"
                     value={formulario.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    placeholder="juan@email.com"
-                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
+                    onChange={handleChange}
+                    placeholder="tu@email.com"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.email ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
                   />
+                  {errores.email && (
+                    <p className="text-red-500 text-sm mt-1">{errores.email}</p>
+                  )}
                 </div>
-                <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="text-zinc-500 text-sm font-medium">Teléfono / WhatsApp *</label>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Teléfono / WhatsApp *
+                  </label>
                   <input
+                    type="tel"
+                    name="telefono"
                     value={formulario.telefono}
-                    onChange={(e) => handleChange("telefono", e.target.value)}
+                    onChange={handleChange}
                     placeholder="3001234567"
-                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.telefono ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
                   />
+                  {errores.telefono && (
+                    <p className="text-red-500 text-sm mt-1">{errores.telefono}</p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Dirección de envío */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-green-400 text-black text-xs font-black flex items-center justify-center">2</span>
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                <MapPin size={20} className="text-green-500" />
                 Dirección de envío
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SearchableSelect
-                  label="Departamento"
-                  value={formulario.departamento}
-                  onChange={(value) => {
-                    handleChange("departamento", value)
-                    handleChange("ciudad", "")
-                  }}
-                  options={Object.keys(DEPARTAMENTOS_CIUDADES)}
-                  placeholder="Selecciona departamento"
-                  required
-                />
-                <SearchableSelect
-                  label="Ciudad"
-                  value={formulario.ciudad}
-                  onChange={(value) => handleChange("ciudad", value)}
-                  options={formulario.departamento ? DEPARTAMENTOS_CIUDADES[formulario.departamento] || [] : []}
-                  placeholder="Selecciona ciudad"
-                  required
-                />
-                <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="text-zinc-500 text-sm font-medium">Dirección *</label>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Departamento *
+                  </label>
+                  <SearchableSelect
+                    label="Departamento"
+                    options={Object.keys(DEPARTAMENTOS_CIUDADES)}
+                    value={formulario.departamento}
+                    onChange={handleChange}
+                    placeholder="Selecciona un departamento"
+                    error={errores.departamento}
+                  />
+                  {errores.departamento && (
+                    <p className="text-red-500 text-sm mt-1">{errores.departamento}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Ciudad *
+                  </label>
+                  <SearchableSelect
+                    label="Ciudad"
+                    options={ciudadesDisponibles}
+                    value={formulario.ciudad}
+                    onChange={handleChange}
+                    placeholder={formulario.departamento ? "Selecciona una ciudad" : "Primero selecciona un departamento"}
+                    disabled={!formulario.departamento}
+                    error={errores.ciudad}
+                  />
+                  {errores.ciudad && (
+                    <p className="text-red-500 text-sm mt-1">{errores.ciudad}</p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Dirección completa *
+                  </label>
                   <input
+                    type="text"
+                    name="direccion"
                     value={formulario.direccion}
-                    onChange={(e) => handleChange("direccion", e.target.value)}
-                    placeholder="Calle 45 # 32 - 15"
-                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition"
+                    onChange={handleChange}
+                    placeholder="Calle 45 # 32-15, Apartamento 301"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition ${
+                      errores.direccion ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
                   />
+                  {errores.direccion && (
+                    <p className="text-red-500 text-sm mt-1">{errores.direccion}</p>
+                  )}
                 </div>
-                <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="text-zinc-500 text-sm font-medium">Referencia</label>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Referencia o indicaciones adicionales
+                  </label>
                   <textarea
+                    name="referencia"
                     value={formulario.referencia}
-                    onChange={(e) => handleChange("referencia", e.target.value)}
-                    placeholder="Apto 301, edificio azul, portón negro..."
+                    onChange={handleChange}
+                    placeholder="Ej: Casa blanca con portón verde, timbre amarillo"
                     rows={3}
-                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-green-400 transition resize-none"
+                    className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition resize-none"
                   />
                 </div>
               </div>
-
-              {/* Cotización de envío */}
-              {cotizacionEnvio && (
-                <div className="mt-4 p-4 bg-green-400/5 border border-green-400/20 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Truck size={16} className="text-green-400" />
-                    <span className="font-medium text-zinc-800 dark:text-white text-sm">
-                      {cotizacionEnvio.nombre}
-                    </span>
-                  </div>
-                  <div className="text-xs text-zinc-500 space-y-1">
-                    <p>Costo de envío: <span className="text-green-400 font-bold">${cotizacionEnvio.precio.toLocaleString()}</span></p>
-                    <p>Tiempo estimado: {cotizacionEnvio.tiempo}</p>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Método de pago */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-green-400 text-black text-xs font-black flex items-center justify-center">3</span>
-                Método de pago
-              </h2>
-              <div className="flex flex-col gap-3">
-                <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition ${
-                  formulario.metodoPago === "tarjeta"
-                    ? "border-green-400 bg-green-400/5"
-                    : "border-zinc-200 dark:border-zinc-700 hover:border-green-400/50"
-                }`}>
-                  <input
-                    type="radio"
-                    name="metodoPago"
-                    value="tarjeta"
-                    checked={formulario.metodoPago === "tarjeta"}
-                    onChange={(e) => handleChange("metodoPago", e.target.value)}
-                    className="accent-green-400"
-                  />
-                  <CreditCard size={20} className="text-green-400" />
-                  <div>
-                    <p className="text-zinc-800 dark:text-white font-medium text-sm">Tarjeta débito / crédito</p>
-                    <p className="text-zinc-500 text-xs">Visa, Mastercard, Amex</p>
-                  </div>
-                </label>
+            {/* Opciones de envío */}
+            {formulario.ciudad && (
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+                <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Truck size={20} className="text-green-500" />
+                  Opciones de envío
+                </h2>
                 
-                <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition ${
-                  formulario.metodoPago === "pse"
-                    ? "border-green-400 bg-green-400/5"
-                    : "border-zinc-200 dark:border-zinc-700 hover:border-green-400/50"
-                }`}>
-                  <input
-                    type="radio"
-                    name="metodoPago"
-                    value="pse"
-                    checked={formulario.metodoPago === "pse"}
-                    onChange={(e) => handleChange("metodoPago", e.target.value)}
-                    className="accent-green-400"
-                  />
-                  <Building2 size={20} className="text-green-400" />
-                  <div>
-                    <p className="text-zinc-800 dark:text-white font-medium text-sm">PSE</p>
-                    <p className="text-zinc-500 text-xs">Débito desde tu banco</p>
+                {cotizandoEnvio ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                      <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Cotizando envío con Servientrega, Envía e Interrapidísimo...</span>
+                    </div>
                   </div>
-                </label>
-                
-                <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition ${
-                  !contraentregaDisponible
-                    ? "opacity-50 cursor-not-allowed border-zinc-200 dark:border-zinc-700"
-                    : formulario.metodoPago === "contraentrega"
-                    ? "border-green-400 bg-green-400/5"
-                    : "border-zinc-200 dark:border-zinc-700 hover:border-green-400/50"
-                }`}>
-                  <input
-                    type="radio"
-                    name="metodoPago"
-                    value="contraentrega"
-                    checked={formulario.metodoPago === "contraentrega"}
-                    onChange={(e) => handleChange("metodoPago", e.target.value)}
-                    disabled={!contraentregaDisponible}
-                    className="accent-green-400"
-                  />
-                  <Wallet size={20} className="text-green-400" />
-                  <div>
-                    <p className="text-zinc-800 dark:text-white font-medium text-sm">Contra entrega</p>
-                    <p className="text-zinc-500 text-xs">
-                      {contraentregaDisponible 
-                        ? "Paga cuando recibas el producto" 
-                        : "Solo disponible en Bucaramanga, Floridablanca, Girón y Piedecuesta"
-                      }
-                    </p>
+                ) : opcionesEnvio.length > 0 ? (
+                  <div className="space-y-3">
+                    {opcionesEnvio.map((opcion, index) => (
+                      <label
+                        key={index}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                          envioSeleccionado?.empresa === opcion.empresa
+                            ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                            : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="envio"
+                          checked={envioSeleccionado?.empresa === opcion.empresa}
+                          onChange={() => setEnvioSeleccionado(opcion)}
+                          className="w-4 h-4 text-green-500 focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-zinc-900 dark:text-white">
+                              {opcion.empresa}
+                            </p>
+                            {index === 0 && (
+                              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                                Más económico
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            Entrega: {opcion.tiempoEntrega}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-zinc-900 dark:text-white">
+                            {opcion.precio === 0 ? '¡Gratis!' : `$${opcion.precio.toLocaleString()}`}
+                          </p>
+                          {opcion.precio > 0 && subtotal >= 150000 && (
+                            <p className="text-xs text-green-600 dark:text-green-400">Envío gratis aplicado</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                    
+                    <div className="mt-4 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                      <div className="grid grid-cols-2 gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+                        <div>
+                          <p><strong>Peso estimado:</strong> {(calcularPesoTotal(items) / 1000).toFixed(1)} kg</p>
+                          <p><strong>Valor declarado:</strong> ${subtotal.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p><strong>Origen:</strong> Bucaramanga, Santander</p>
+                          <p><strong>Destino:</strong> {formulario.ciudad}, {formulario.departamento}</p>
+                        </div>
+                      </div>
+                      
+                      {envioSeleccionado?.zona && (
+                        <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              envioSeleccionado.zona === 'zona1' ? 'bg-green-500' :
+                              envioSeleccionado.zona === 'zona2' ? 'bg-blue-500' :
+                              envioSeleccionado.zona === 'zona3' ? 'bg-yellow-500' :
+                              envioSeleccionado.zona === 'zona4' ? 'bg-orange-500' :
+                              envioSeleccionado.zona === 'zona5' ? 'bg-red-500' :
+                              'bg-gray-500'
+                            }`}></div>
+                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              {
+                                envioSeleccionado.zona === 'zona1' ? 'Zona Local' :
+                                envioSeleccionado.zona === 'zona2' ? 'Zona Regional' :
+                                envioSeleccionado.zona === 'zona3' ? 'Zona Nacional' :
+                                envioSeleccionado.zona === 'zona4' ? 'Zona Costa' :
+                                envioSeleccionado.zona === 'zona5' ? 'Zona Sur/Occidente' :
+                                'Zona Especial'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Resumen móvil (visible solo en móvil) */}
-            <div className="lg:hidden bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-zinc-800 dark:text-white">Total del pedido</h3>
-                <span className="text-2xl font-black text-green-400">${total.toLocaleString()}</span>
-              </div>
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex justify-between text-zinc-500">
-                  <span>Subtotal ({items.length} producto{items.length !== 1 ? 's' : ''})</span>
-                  <span>${subtotal.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-zinc-500">
-                  <span>Envío</span>
-                  <span>{costoEnvio > 0 ? `$${costoEnvio.toLocaleString()}` : 'Calculando...'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Botón de finalizar */}
-            <button
-              onClick={handleSubmit}
-              disabled={cargando || !formulario.nombre || !formulario.email || !formulario.telefono || !formulario.ciudad || !formulario.direccion || !formulario.metodoPago}
-              className="bg-green-400 text-black font-black px-8 py-4 rounded-xl hover:bg-green-300 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-            >
-              <Lock size={20} />
-              {cargando ? "Procesando pedido..." : `Confirmar pedido - $${total.toLocaleString()}`}
-              {!cargando && <ArrowRight size={20} />}
-            </button>
-            
-            {error && (
-              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-                <p className="text-red-600 dark:text-red-400 text-sm font-medium">{error}</p>
+                ) : formulario.ciudad ? (
+                  <div className="text-center py-6 text-zinc-500">
+                    <Truck size={32} className="mx-auto mb-2 opacity-50" />
+                    <p>No se pudieron cargar opciones de envío</p>
+                    <button
+                      onClick={() => cotizarEnvios(formulario.ciudad, formulario.departamento)}
+                      className="mt-2 text-green-500 hover:text-green-600 text-sm"
+                    >
+                      Intentar de nuevo
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )}
+
+            {/* Método de pago */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+                <CreditCard size={20} className="text-green-500" />
+                Método de pago
+              </h2>
+              
+              <div className="space-y-3">
+                {contraentregaDisponible ? (
+                  <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                    formulario.metodoPago === "contraentrega" 
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
+                      : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="metodoPago"
+                      value="contraentrega"
+                      checked={formulario.metodoPago === "contraentrega"}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-green-500 focus:ring-green-500"
+                    />
+                    <Wallet size={20} className="text-zinc-600 dark:text-zinc-400" />
+                    <div className="flex-1">
+                      <p className="font-medium text-zinc-900 dark:text-white">Contraentrega</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">Paga cuando recibas tu pedido</p>
+                    </div>
+                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                      Recomendado
+                    </span>
+                  </label>
+                ) : (
+                  <div className="p-4 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl opacity-50">
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="radio"
+                        disabled
+                        className="w-4 h-4 text-zinc-300"
+                      />
+                      <Wallet size={20} className="text-zinc-400" />
+                      <div className="flex-1">
+                        <p className="font-medium text-zinc-500">Contraentrega</p>
+                        <p className="text-sm text-zinc-400">Solo disponible en Bucaramanga, Floridablanca, Girón y Piedecuesta</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                  formulario.metodoPago === "transferencia" 
+                    ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
+                    : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                }`}>
+                  <input
+                    type="radio"
+                    name="metodoPago"
+                    value="transferencia"
+                    checked={formulario.metodoPago === "transferencia"}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-green-500 focus:ring-green-500"
+                  />
+                  <Building2 size={20} className="text-zinc-600 dark:text-zinc-400" />
+                  <div className="flex-1">
+                    <p className="font-medium text-zinc-900 dark:text-white">Transferencia bancaria</p>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">Consigna o transferencia a nuestra cuenta</p>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
 
-          {/* Resumen lateral */}
-          <div className="hidden lg:block">
-            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sticky top-24">
-              <h3 className="font-bold text-zinc-800 dark:text-white mb-4">Resumen del pedido</h3>
+          {/* Resumen del pedido */}
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sticky top-24">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                Resumen del pedido
+              </h2>
               
-              {/* Productos */}
-              <div className="flex flex-col gap-3 mb-6">
-                {items.map((item, i) => (
-                  <div key={i} className="flex gap-3 items-center">
-                    <div className="relative flex-shrink-0">
-                      <img 
-                        src={item.imagen} 
-                        alt={item.nombre} 
-                        className="w-12 h-12 rounded-lg object-cover bg-zinc-100 dark:bg-zinc-800" 
+              {/* Lista de productos */}
+              <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
+                {items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <div className="relative w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image
+                        src={item.imagen}
+                        alt={item.nombre}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
                       />
-                      <span className="absolute -top-1 -right-1 bg-green-400 text-black text-xs font-black w-5 h-5 rounded-full flex items-center justify-center">
-                        {item.cantidad}
-                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-zinc-800 dark:text-white text-sm font-medium truncate mb-1">
+                      <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">
                         {item.nombre}
                       </p>
-                      <p className="text-zinc-500 text-xs">
-                        ${item.precio.toLocaleString()} × {item.cantidad}
+                      <p className="text-xs text-zinc-500">
+                        Cantidad: {item.cantidad}
                       </p>
                     </div>
-                    <p className="text-green-400 font-bold text-sm flex-shrink-0">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">
                       ${(item.precio * item.cantidad).toLocaleString()}
                     </p>
                   </div>
                 ))}
               </div>
-
-              {/* Subtotales */}
-              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 mb-4">
-                <div className="flex justify-between text-sm text-zinc-500 mb-2">
-                  <span>Subtotal ({items.length} producto{items.length !== 1 ? 's' : ''})</span>
-                  <span>${subtotal.toLocaleString()}</span>
+              
+              {/* Totales */}
+              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">
+                    Subtotal ({items.reduce((acc, i) => acc + i.cantidad, 0)} productos)
+                  </span>
+                  <span className="text-zinc-900 dark:text-white">
+                    ${subtotal.toLocaleString()}
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm text-zinc-500 mb-2">
-                  <span>Envío</span>
-                  <span>{costoEnvio > 0 ? `$${costoEnvio.toLocaleString()}` : 'Calculando...'}</span>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-600 dark:text-zinc-400">Envío</span>
+                  <div className="text-right">
+                    <span className={`${envio === 0 ? 'text-green-500 font-semibold' : 'text-zinc-900 dark:text-white'}`}>
+                      {envio === 0 ? '¡Gratis!' : `$${envio.toLocaleString()}`}
+                    </span>
+                    {envioSeleccionado && (
+                      <p className="text-xs text-zinc-500">
+                        {envioSeleccionado.empresa}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                {cotizacionEnvio && (
-                  <p className="text-xs text-zinc-400 mb-2">
-                    {cotizacionEnvio.nombre} • {cotizacionEnvio.tiempo}
-                  </p>
+                
+                {subtotal >= 150000 && (
+                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <CheckCircle size={12} />
+                    Envío gratis por compra mayor a $150.000
+                  </div>
                 )}
-              </div>
-
-              {/* Total */}
-              <div className="bg-green-400/5 border border-green-400/20 rounded-xl p-4 mb-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-800 dark:text-white font-bold">Total</span>
-                  <span className="text-2xl font-black text-green-400">
+                
+                <div className="border-t border-zinc-200 dark:border-zinc-800 pt-2 flex justify-between font-semibold">
+                  <span className="text-zinc-900 dark:text-white">Total</span>
+                  <span className="text-lg text-green-500">
                     ${total.toLocaleString()}
                   </span>
                 </div>
               </div>
-
+              
+              {/* Botón de confirmar pedido */}
+              <button
+                onClick={procesarPedido}
+                disabled={cargando}
+                className={`w-full mt-6 py-4 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2 ${
+                  cargando
+                    ? 'bg-zinc-400 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                {cargando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <Lock size={16} />
+                    Confirmar pedido
+                  </>
+                )}
+              </button>
+              
               {/* Garantías */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <Lock size={12} className="text-green-400" />
-                  <span>Pago 100% seguro con SSL</span>
+              <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <Shield size={12} className="text-green-500" />
+                  <span>Compra 100% segura</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <Truck size={12} className="text-green-400" />
-                  <span>Envío a todo Colombia</span>
+                <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <Truck size={12} className="text-green-500" />
+                  <span>Envío a toda Colombia</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <Shield size={12} className="text-green-400" />
+                <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <Package size={12} className="text-green-500" />
                   <span>Garantía en todos los productos</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <CheckCircle size={12} className="text-green-400" />
-                  <span>Soporte técnico incluido</span>
                 </div>
               </div>
             </div>
@@ -685,5 +1084,5 @@ export default function CheckoutRapido() {
         </div>
       </div>
     </div>
-  )
+  );
 }
