@@ -12,20 +12,45 @@ const supabase = createClient(
 
 export async function GET(request) {
   // MercadoPago hace verificaciones GET del webhook
-  console.log("Webhook GET verificación")
-  return new Response("OK", { status: 200 })
+  console.log("Webhook GET verificación desde:", request.url)
+  return new Response("OK", { 
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain',
+      'Cache-Control': 'no-cache'
+    }
+  })
+}
+
+export async function OPTIONS(request) {
+  // Manejo de preflight CORS
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Cache-Control': 'no-cache'
+    }
+  })
 }
 
 export async function POST(request) {
   try {
     const body = await request.json()
-    console.log("Webhook recibido:", JSON.stringify(body, null, 2))
+    console.log("Webhook POST recibido desde:", request.url)
+    console.log("Headers recibidos:", Object.fromEntries(request.headers.entries()))
+    console.log("Webhook body:", JSON.stringify(body, null, 2))
 
     // Responder inmediatamente a MercadoPago para evitar reintentos
     const response = new Response("OK", { 
       status: 200,
       headers: {
-        'Content-Type': 'text/plain'
+        'Content-Type': 'text/plain',
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
       }
     })
 
