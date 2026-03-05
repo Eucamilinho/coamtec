@@ -11,7 +11,6 @@ const supabase = createClient(
 )
 
 export async function GET(request) {
-  console.log(`[${new Date().toISOString()}] Webhook GET verification`)
   return Response.json({ status: "ok" })
 }
 
@@ -31,31 +30,19 @@ export async function OPTIONS(request) {
 export async function POST(request) {
   try {
     const body = await request.json()
-    console.log("Webhook POST recibido desde:", request.url)
-    console.log("Headers recibidos:", Object.fromEntries(request.headers.entries()))
-    console.log("Webhook body:", JSON.stringify(body, null, 2))
 
     // Manejar notificaciones de prueba
     if (body.live_mode === false && body.data?.id === "123456") {
-      console.log("Notificación de prueba recibida correctamente")
       return Response.json({ status: "ok" })
     }
 
     // Procesar solo notificaciones de tipo payment
     if (body.type === "payment" && body.data?.id) {
       const paymentId = body.data.id
-      console.log("Procesando Payment ID:", paymentId)
 
       try {
         const payment = new Payment(mp)
         const paymentInfo = await payment.get({ id: paymentId })
-        
-        console.log("Payment Info:", {
-          id: paymentInfo.id,
-          status: paymentInfo.status,
-          preference_id: paymentInfo.preference_id,
-          external_reference: paymentInfo.external_reference
-        })
 
         const estado =
           paymentInfo.status === "approved" ? "pagado" :
@@ -77,20 +64,16 @@ export async function POST(request) {
 
         if (error) {
           console.error("Error actualizando Supabase:", error)
-        } else if (data && data.length > 0) {
-          console.log("Pedido actualizado correctamente:", data[0].id)
-        } else {
-          console.log("No se encontró pedido para actualizar")
         }
 
       } catch (paymentError) {
-        console.error("Error obteniendo info de pago:", paymentError)
+        console.error("Payment error:", paymentError)
       }
     }
 
     return Response.json({ status: "ok" })
   } catch (error) {
-    console.error("Webhook error general:", error)
+    console.error("Webhook error:", error)
     return Response.json({ status: "error", message: error.message }, { status: 200 })
   }
 }

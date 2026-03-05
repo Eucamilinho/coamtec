@@ -36,10 +36,11 @@ export async function POST(request) {
           },
         },
         back_urls: {
-          success: `https://coamtec.com/checkout/resultado?status=success`,
-  failure: `https://coamtec.com/checkout/resultado?status=failure`,
-  pending: `https://coamtec.com/checkout/resultado?status=pending`,
+          success: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=success`,
+          failure: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=failure`,
+          pending: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=pending`,
         },
+        notification_url: `${process.env.NEXT_PUBLIC_URL}/api/webhook`,
         // auto_return: "approved",
         shipments: {
           cost: envio,
@@ -66,8 +67,6 @@ export async function POST(request) {
       mp_payment_id: response.id,
       estado: "pendiente",
     }])
-
-    console.log("URL:", process.env.NEXT_PUBLIC_URL)
 
     return Response.json({ url: response.init_point })
 
