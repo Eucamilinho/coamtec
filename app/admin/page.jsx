@@ -36,6 +36,10 @@ const productoVacio = {
   categoria: "",
   stock: "",
   video_tiktok: "",
+  peso: "", // en gramos
+  alto: "", // en centímetros
+  ancho: "", // en centímetros
+  largo: "", // en centímetros
 }
 
 export default function Admin() {
@@ -849,6 +853,80 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                 <p className="text-zinc-600 text-xs">Pega la URL del video de TikTok de tu producto</p>
               </div>
 
+              {/* Peso y dimensiones */}
+              <div className="border-t border-zinc-800 pt-6">
+                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                  <Package size={16} />
+                  Especificaciones de envío
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-zinc-400 text-sm font-medium">
+                      Peso (gramos)
+                    </label>
+                    <input
+                      name="peso"
+                      value={formulario.peso || ""}
+                      onChange={handleChange}
+                      placeholder="500"
+                      type="number"
+                      min="1"
+                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-zinc-400 text-sm font-medium">
+                      Alto (cm)
+                    </label>
+                    <input
+                      name="alto"
+                      value={formulario.alto || ""}
+                      onChange={handleChange}
+                      placeholder="5"
+                      type="number"
+                      min="1"
+                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-zinc-400 text-sm font-medium">
+                      Ancho (cm)
+                    </label>
+                    <input
+                      name="ancho"
+                      value={formulario.ancho || ""}
+                      onChange={handleChange}
+                      placeholder="25"
+                      type="number"
+                      min="1"
+                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-zinc-400 text-sm font-medium">
+                      Largo (cm)
+                    </label>
+                    <input
+                      name="largo"
+                      value={formulario.largo || ""}
+                      onChange={handleChange}
+                      placeholder="30"
+                      type="number"
+                      min="1"
+                      className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
+                    />
+                  </div>
+                </div>
+                
+                <p className="text-zinc-600 text-xs mt-2">
+                  Estas medidas se utilizarán para calcular los costos de envío con las empresas de mensajería.
+                </p>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleSubmit}
@@ -985,9 +1063,15 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
 
             {/* Footer */}
             <div className="border-t border-zinc-800 pt-3 flex items-center justify-between">
-              <div className="flex gap-4 text-xs text-zinc-500">
+              <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
                 <span>Envío: <span className="text-zinc-300">{pedido.metodo_envio || "estándar"}</span></span>
                 <span>Pago: <span className="text-zinc-300">{pedido.metodo_pago || "MercadoPago"}</span></span>
+                {pedido.proveedor_envio && (
+                  <span>Mensajería: <span className="text-green-400 font-medium">{pedido.proveedor_envio}</span></span>
+                )}
+                {pedido.costo_envio && (
+                  <span>Costo envío: <span className="text-zinc-300">${pedido.costo_envio.toLocaleString()}</span></span>
+                )}
               </div>
               <select
                 value={pedido.estado}

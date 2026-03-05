@@ -10,45 +10,82 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+export async function GET(request) {
+  // MercadoPago hace verificaciones GET del webhook
+  console.log("Webhook GET verificación")
+  return new Response("OK", { status: 200 })
+}
+
 export async function POST(request) {
   try {
     const body = await request.json()
-    console.log("Webhook recibido:", JSON.stringify(body))
+    console.log("Webhook recibido:", JSON.stringify(body, null, 2))
 
-    // Ignorar notificaciones de prueba
+    // Responder inmediatamente a MercadoPago para evitar reintentos
+    const response = new Response("OK", { 
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain'
+      }
+    })
+
+    // Manejar notificaciones de prueba
     if (body.live_mode === false && body.data?.id === "123456") {
-      return Response.json({ ok: true })
+      console.log("Notificación de prueba recibida correctamente")
+      return response
     }
 
-    if (body.type === "payment") {
+    // Procesar solo notificaciones de tipo payment
+    if (body.type === "payment" && body.data?.id) {
       const paymentId = body.data.id
-      console.log("Payment ID:", paymentId)
+      console.log("Procesando Payment ID:", paymentId)
 
-      const payment = new Payment(mp)
-      const paymentInfo = await payment.get({ id: paymentId })
-      console.log("Status:", paymentInfo.status)
-      console.log("Preference ID:", paymentInfo.preference_id)
-
-      const estado =
-        paymentInfo.status === "approved" ? "pagado" :
-        paymentInfo.status === "rejected" ? "rechazado" :
-        "pendiente"
-
-      const { error } = await supabase
-        .from("pedidos")
-        .update({
-          mp_status: paymentInfo.status,
-          estado,
+      try {
+        const payment = new Payment(mp)
+        const paymentInfo = await payment.get({ id: paymentId })
+        
+        console.log("Payment Info:", {
+          id: paymentInfo.id,
+          status: paymentInfo.status,
+          preference_id: paymentInfo.preference_id,
+          external_reference: paymentInfo.external_reference
         })
-        .eq("mp_payment_id", String(paymentInfo.preference_id))
 
-      if (error) console.error("Supabase error:", error)
-      else console.log("Pedido actualizado correctamente")
+        const estado =
+          paymentInfo.status === "approved" ? "pagado" :
+          paymentInfo.status === "rejected" ? "rechazado" :
+          paymentInfo.status === "cancelled" ? "cancelado" :
+          "pendiente"
+
+        // Actualizar pedido en Supabase usando preference_id o external_reference
+        const { data, error } = await supabase
+          .from("pedidos")
+          .update({
+            mp_payment_id: paymentInfo.id,
+            mp_status: paymentInfo.status,
+            estado,
+            fecha_pagado: paymentInfo.status === "approved" ? new Date().toISOString() : null
+          })
+          .or(`mp_payment_id.eq.${paymentInfo.preference_id},external_reference.eq.${paymentInfo.external_reference}`)
+          .select()
+
+        if (error) {
+          console.error("Error actualizando Supabase:", error)
+        } else if (data && data.length > 0) {
+          console.log("Pedido actualizado correctamente:", data[0].id)
+        } else {
+          console.log("No se encontró pedido para actualizar")
+        }
+
+      } catch (paymentError) {
+        console.error("Error obteniendo info de pago:", paymentError)
+      }
     }
 
-    return Response.json({ ok: true })
+    return response
   } catch (error) {
-    console.error("Webhook error:", error)
-    return Response.json({ error: error.message }, { status: 500 })
+    console.error("Webhook error general:", error)
+    // Siempre devolver 200 para evitar reintentos de MercadoPago
+    return new Response("ERROR", { status: 200 })
   }
 }

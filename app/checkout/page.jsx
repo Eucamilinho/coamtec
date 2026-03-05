@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useCarrito } from "../store/carritoStore";
+import { supabase } from "../lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -23,52 +24,131 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// Simulación de APIs de empresas de mensajería
-const cotizarServientrega = async (origen, destino, peso, valorDeclarado) => {
-  // Simulación - en producción conectar con API real de Servientrega
+// Sistema de zonificación para envíos desde Bucaramanga
+const ZONAS_ENVIO = {
+  // Zona 1: Área metropolitana y Santander (local)
+  zona1: {
+    departamentos: ["Santander"],
+    ciudades: ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "Socorro", "San Gil"],
+    factor: 1.0,
+    tiempoBase: "1 día hábil"
+  },
+  // Zona 2: Departamentos vecinos
+  zona2: {
+    departamentos: ["Norte de Santander", "Boyacá", "Cesar"],
+    factor: 1.4,
+    tiempoBase: "1-2 días hábiles"
+  },
+  // Zona 3: Centro del país (principales ciudades)
+  zona3: {
+    departamentos: ["Cundinamarca", "Antioquia", "Caldas", "Risaralda", "Quindío", "Tolima", "Huila"],
+    factor: 1.8,
+    tiempoBase: "2-3 días hábiles"
+  },
+  // Zona 4: Costa Atlántica
+  zona4: {
+    departamentos: ["Atlántico", "Bolívar", "Magdalena", "La Guajira", "Córdoba", "Sucre"],
+    factor: 2.2,
+    tiempoBase: "2-4 días hábiles"
+  },
+  // Zona 5: Sur y occidente del país
+  zona5: {
+    departamentos: ["Valle del Cauca", "Cauca", "Nariño", "Meta", "Casanare"],
+    factor: 2.8,
+    tiempoBase: "3-5 días hábiles"
+  },
+  // Zona 6: Regiones apartadas
+  zona6: {
+    departamentos: ["Chocó", "Amazonas", "Caquetá", "Putumayo", "Arauca", "Guainía", "Guaviare", "Vaupés", "Vichada"],
+    factor: 4.0,
+    tiempoBase: "5-8 días hábiles"
+  }
+};
+
+// Función para determinar zona de envío
+const obtenerZonaEnvio = (departamento, ciudad) => {
+  // Primero verificar si es Bucaramanga mismo (zona especial)
+  if (departamento === "Santander" && ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"].includes(ciudad)) {
+    return { ...ZONAS_ENVIO.zona1, zona: "zona1", factor: 0.8 }; // Descuento local
+  }
+  
+  // Buscar en qué zona está el departamento
+  for (const [zonaKey, zonaData] of Object.entries(ZONAS_ENVIO)) {
+    if (zonaData.departamentos.includes(departamento)) {
+      return { ...zonaData, zona: zonaKey };
+    }
+  }
+  
+  // Por defecto, zona 6 (más cara) para departamentos no clasificados
+  return { ...ZONAS_ENVIO.zona6, zona: "zona6" };
+};
+
+// Simulación de APIs de empresas de mensajería con precios realistas
+const cotizarServientrega = async (origen, destino, departamento, peso, valorDeclarado) => {
   await new Promise(resolve => setTimeout(resolve, 800));
-  const basePrice = 12000;
-  const weightFactor = Math.ceil(peso / 1000) * 2000;
-  const distanceFactor = origen !== destino ? 1.5 : 1;
-  const insuranceFactor = valorDeclarado > 100000 ? 1.2 : 1;
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 8500; // Precio base más realista
+  const weightFactor = Math.ceil(peso / 1000) * 1800;
+  const zoneFactor = zonaDestino.factor;
+  const insuranceFactor = valorDeclarado > 200000 ? 1.15 : (valorDeclarado > 100000 ? 1.08 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
   
   return {
     empresa: "Servientrega",
-    precio: Math.round(basePrice * distanceFactor * insuranceFactor + weightFactor),
-    tiempoEntrega: "1-3 días hábiles",
-    confiable: true
+    precio: Math.max(precio, 6500), // Mínimo $6.500
+    tiempoEntrega: zonaDestino.tiempoBase,
+    confiable: true,
+    zona: zonaDestino.zona
   };
 };
 
-const cotizarEnvia = async (origen, destino, peso, valorDeclarado) => {
-  // Simulación - en producción conectar con API real de Envía
+const cotizarEnvia = async (origen, destino, departamento, peso, valorDeclarado) => {
   await new Promise(resolve => setTimeout(resolve, 600));
-  const basePrice = 10500;
-  const weightFactor = Math.ceil(peso / 1000) * 1800;
-  const distanceFactor = origen !== destino ? 1.4 : 1;
-  const insuranceFactor = valorDeclarado > 100000 ? 1.15 : 1;
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 7200; // Envía suele ser más económico
+  const weightFactor = Math.ceil(peso / 1000) * 1600;
+  const zoneFactor = zonaDestino.factor;
+  const insuranceFactor = valorDeclarado > 200000 ? 1.12 : (valorDeclarado > 100000 ? 1.06 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
   
   return {
     empresa: "Envía",
-    precio: Math.round(basePrice * distanceFactor * insuranceFactor + weightFactor),
-    tiempoEntrega: "2-4 días hábiles",
-    confiable: true
+    precio: Math.max(precio, 5800), // Mínimo $5.800
+    tiempoEntrega: zonaDestino.tiempoBase,
+    confiable: true,
+    zona: zonaDestino.zona
   };
 };
 
-const cotizarInterrapidisimo = async (origen, destino, peso, valorDeclarado) => {
-  // Simulación - en producción conectar con API real de Interrapidísimo
+const cotizarInterrapidisimo = async (origen, destino, departamento, peso, valorDeclarado) => {
   await new Promise(resolve => setTimeout(resolve, 700));
-  const basePrice = 11800;
-  const weightFactor = Math.ceil(peso / 1000) * 1900;
-  const distanceFactor = origen !== destino ? 1.45 : 1;
-  const insuranceFactor = valorDeclarado > 100000 ? 1.18 : 1;
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 9800; // Más caro pero más rápido
+  const weightFactor = Math.ceil(peso / 1000) * 2000;
+  const zoneFactor = zonaDestino.factor * 0.85; // Descuento por velocidad
+  const insuranceFactor = valorDeclarado > 200000 ? 1.18 : (valorDeclarado > 100000 ? 1.10 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
+  
+  // Ajustar tiempo de entrega (más rápido)
+  let tiempoAjustado = zonaDestino.tiempoBase;
+  if (zonaDestino.zona === "zona2" || zonaDestino.zona === "zona3") {
+    tiempoAjustado = "1-2 días hábiles";
+  } else if (zonaDestino.zona === "zona4" || zonaDestino.zona === "zona5") {
+    tiempoAjustado = "2-3 días hábiles";
+  }
   
   return {
     empresa: "Interrapidísimo",
-    precio: Math.round(basePrice * distanceFactor * insuranceFactor + weightFactor),
-    tiempoEntrega: "1-2 días hábiles",
-    confiable: true
+    precio: Math.max(precio, 7500), // Mínimo $7.500
+    tiempoEntrega: tiempoAjustado,
+    confiable: true,
+    zona: zonaDestino.zona
   };
 };
 
@@ -234,11 +314,10 @@ export default function Checkout() {
 
   // Función para calcular peso total del pedido
   const calcularPesoTotal = (items) => {
-    // Peso estimado por producto (en gramos)
-    // En producción, esto vendría de la base de datos de productos
     return items.reduce((total, item) => {
-      const pesoEstimado = 500; // 500g por producto promedio
-      return total + (pesoEstimado * item.cantidad);
+      // Usar peso real del producto si está disponible, sino usar estimado
+      const pesoProducto = item.peso && item.peso > 0 ? parseInt(item.peso) : 500; // 500g por defecto
+      return total + (pesoProducto * item.cantidad);
     }, 0);
   };
 
@@ -265,9 +344,9 @@ export default function Checkout() {
       
       // Cotizar con todas las empresas en paralelo
       const [servientrega, envia, interrapidisimo] = await Promise.all([
-        cotizarServientrega(origen, destino, pesoTotal, valorDeclarado),
-        cotizarEnvia(origen, destino, pesoTotal, valorDeclarado),
-        cotizarInterrapidisimo(origen, destino, pesoTotal, valorDeclarado)
+        cotizarServientrega(origen, destino, departamento, pesoTotal, valorDeclarado),
+        cotizarEnvia(origen, destino, departamento, pesoTotal, valorDeclarado),
+        cotizarInterrapidisimo(origen, destino, departamento, pesoTotal, valorDeclarado)
       ]);
       
       const opciones = [servientrega, envia, interrapidisimo]
@@ -354,8 +433,50 @@ export default function Checkout() {
     setCargando(true);
     
     try {
-      // Simular proceso de pedido
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Crear el pedido en la base de datos
+      const pedidoData = {
+        // Información del cliente
+        nombre: formulario.nombre,
+        email: formulario.email,
+        telefono: formulario.telefono,
+        
+        // Dirección de envío
+        departamento: formulario.departamento,
+        ciudad: formulario.ciudad,
+        direccion: formulario.direccion,
+        referencia: formulario.referencia,
+        
+        // Método de pago
+        metodo_pago: formulario.metodoPago,
+        
+        // Información de envío
+        proveedor_envio: envioSeleccionado ? envioSeleccionado.empresa : 'Envío estándar',
+        costo_envio: envio,
+        tiempo_entrega: envioSeleccionado ? envioSeleccionado.tiempoEntrega : '3-5 días hábiles',
+        zona_envio: envioSeleccionado ? envioSeleccionado.zona : 'zona3',
+        
+        // Totales
+        subtotal: subtotal,
+        envio: envio,
+        total: total,
+        
+        // Productos
+        items: items,
+        
+        // Estado inicial
+        estado: 'pendiente'
+      };
+      
+      const { data, error } = await supabase
+        .from('pedidos')
+        .insert([pedidoData])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log('Pedido creado exitosamente:', data);
       
       // Vaciar carrito y redirigir
       vaciarCarrito();
@@ -618,13 +739,42 @@ export default function Checkout() {
                       </label>
                     ))}
                     
-                    <div className="mt-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                        💡 <strong>Peso estimado:</strong> {(calcularPesoTotal(items) / 1000).toFixed(1)} kg
-                      </p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                        📦 <strong>Valor declarado:</strong> ${subtotal.toLocaleString()}
-                      </p>
+                    <div className="mt-4 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                      <div className="grid grid-cols-2 gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+                        <div>
+                          <p><strong>Peso estimado:</strong> {(calcularPesoTotal(items) / 1000).toFixed(1)} kg</p>
+                          <p><strong>Valor declarado:</strong> ${subtotal.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p><strong>Origen:</strong> Bucaramanga, Santander</p>
+                          <p><strong>Destino:</strong> {formulario.ciudad}, {formulario.departamento}</p>
+                        </div>
+                      </div>
+                      
+                      {envioSeleccionado?.zona && (
+                        <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              envioSeleccionado.zona === 'zona1' ? 'bg-green-500' :
+                              envioSeleccionado.zona === 'zona2' ? 'bg-blue-500' :
+                              envioSeleccionado.zona === 'zona3' ? 'bg-yellow-500' :
+                              envioSeleccionado.zona === 'zona4' ? 'bg-orange-500' :
+                              envioSeleccionado.zona === 'zona5' ? 'bg-red-500' :
+                              'bg-gray-500'
+                            }`}></div>
+                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              {
+                                envioSeleccionado.zona === 'zona1' ? 'Zona Local' :
+                                envioSeleccionado.zona === 'zona2' ? 'Zona Regional' :
+                                envioSeleccionado.zona === 'zona3' ? 'Zona Nacional' :
+                                envioSeleccionado.zona === 'zona4' ? 'Zona Costa' :
+                                envioSeleccionado.zona === 'zona5' ? 'Zona Sur/Occidente' :
+                                'Zona Especial'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : formulario.ciudad ? (
