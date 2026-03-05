@@ -36,9 +36,9 @@ export async function POST(request) {
           },
         },
         back_urls: {
-          success: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=success`,
-          failure: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=failure`,
-          pending: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=pending`,
+          success: `https://coamtec.com/checkout/resultado?status=success`,
+  failure: `https://coamtec.com/checkout/resultado?status=failure`,
+  pending: `https://coamtec.com/checkout/resultado?status=pending`,
         },
         // auto_return: "approved",
         shipments: {
