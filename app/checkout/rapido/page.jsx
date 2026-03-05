@@ -137,7 +137,7 @@ function SearchableSelect({ label, value, onChange, options, placeholder, requir
 }
 
 export default function CheckoutRapido() {
-  const { items, limpiar } = useCompraRapida()
+  const { items, limpiar, actualizarCantidad } = useCompraRapida()
   const router = useRouter()
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState("")
@@ -196,76 +196,101 @@ export default function CheckoutRapido() {
         return
       }
 
-      // Crear pedido en Supabase
-      const pedidoData = {
-        productos: items,
-        cliente: {
+      // Validar stock actual antes de proceder
+      console.log("Validando stock antes del pago...");
+      const stockErrors = [];
+      
+      for (const item of items) {
+        const { data: producto, error } = await supabase
+          .from('productos')
+          .select('stock, nombre')
+          .eq('id', item.id)
+          .single();
+          
+        if (error) {
+          console.error('Error obteniendo producto:', error);
+          continue;
+        }
+        
+        if (!producto) {
+          stockErrors.push(`Producto "${item.nombre}" no encontrado`);
+          continue;
+        }
+        
+        if (producto.stock < item.cantidad) {
+          stockErrors.push({
+            id: item.id,
+            nombre: producto.nombre,
+            disponible: producto.stock,
+            solicitado: item.cantidad
+          });
+        }
+      }
+      
+      // Si hay errores de stock, mostrar alerta
+      if (stockErrors.length > 0) {
+        const problemas = stockErrors.map(error => {
+          if (typeof error === 'string') return error;
+          return `${error.nombre}: quieres ${error.solicitado}, solo quedan ${error.disponible} disponibles`;
+        }).join('\n');
+        
+        const accion = confirm(
+          `⚠️ PROBLEMA DE STOCK:\n\n${problemas}\n\n` +
+          `¿Quieres ajustar automáticamente la cantidad a la disponible?\n\n` +
+          `• OK: Ajustar cantidad automáticamente\n` +
+          `• Cancelar: Cancelar compra`
+        );
+        
+        if (accion) {
+          // Para compra rápida, ajustamos la cantidad del único item
+          const error = stockErrors[0];
+          if (error.disponible > 0) {
+            // Actualizar la cantidad en el store
+            actualizarCantidad(error.id, error.disponible);
+            alert(`✅ Cantidad ajustada a ${error.disponible} unidades disponibles.`);
+          } else {
+            setError("Producto agotado. No se puede completar la compra.");
+            setCargando(false);
+            return;
+          }
+        } else {
+          setCargando(false);
+          return;
+        }
+      }
+
+      // Si es contraentrega, crear pedido y redirigir al resultado
+      if (formulario.metodoPago === 'contraentrega') {
+        const pedidoData = {
           nombre: formulario.nombre,
           email: formulario.email,
           telefono: formulario.telefono,
           departamento: formulario.departamento,
           ciudad: formulario.ciudad,
           direccion: formulario.direccion,
-          referencia: formulario.referencia
-        },
-        subtotal,
-        costo_envio: costoEnvio,
-        total,
-        metodo_pago: formulario.metodoPago,
-        estado: 'pendiente',
-        proveedor_envio: cotizacionEnvio?.zona || 'zona6',
-        zona_envio: cotizacionEnvio?.nombre || 'Zona 6',
-        tiempo_entrega: cotizacionEnvio?.tiempo || '6-8 días'
-      }
-
-      const { data: pedido, error: errorPedido } = await supabase
-        .from('pedidos')
-        .insert(pedidoData)
-        .select()
-        .single()
-
-      if (errorPedido) {
-        console.error('Error al crear pedido:', errorPedido)
-        setError("Error al procesar el pedido. Intenta de nuevo.")
-        setCargando(false)
-        return
-      }
-
-      // Si es contraentrega, redirigir al resultado
-      if (formulario.metodoPago === 'contraentrega') {
-        // Crear pedido en Supabase
-        const pedidoData = {
-          productos: items,
-          cliente: {
-            nombre: formulario.nombre,
-            email: formulario.email,
-            telefono: formulario.telefono,
-            departamento: formulario.departamento,
-            ciudad: formulario.ciudad,
-            direccion: formulario.direccion,
-            referencia: formulario.referencia
-          },
-          subtotal,
-          costo_envio: costoEnvio,
-          total,
+          referencia: formulario.referencia,
           metodo_pago: formulario.metodoPago,
-          estado: 'pagado', // Contraentrega se considera pagado
-          proveedor_envio: cotizacionEnvio?.zona || 'zona6',
-          zona_envio: cotizacionEnvio?.nombre || 'Zona 6',
-          tiempo_entrega: cotizacionEnvio?.tiempo || '6-8 días'
-        }
-
+          proveedor_envio: cotizacionEnvio?.empresa || 'Envío estándar',
+          costo_envio: costoEnvio,
+          tiempo_entrega: cotizacionEnvio?.tiempo || '6-8 días',
+          zona_envio: cotizacionEnvio?.zona || 'zona6',
+          subtotal,
+          total,
+          items,
+          estado: 'pagado' // Contraentrega se considera pagado inmediatamente
+        };
+        
         const { data: pedido, error: errorPedido } = await supabase
           .from('pedidos')
-          .insert(pedidoData)
+          .insert([pedidoData])
           .select()
-          .single()
-
+          .single();
+        
         if (errorPedido) {
-          console.error('Error al crear pedido:', errorPedido)
-          setError("Error al procesar el pedido. Intenta de nuevo.")
-          setCargando(false)
-          return
+          console.error('Error al crear pedido:', errorPedido);
+          setError("Error al procesar el pedido. Intenta de nuevo.");
+          setCargando(false);
+          return;
         }
 
         // Actualizar stock para contraentrega
@@ -278,44 +303,54 @@ export default function CheckoutRapido() {
           
           const stockResult = await stockResponse.json();
           console.log('Resultado actualización stock:', stockResult);
+          
+          if (!stockResult.success) {
+            console.warn('Algunos productos no pudieron actualizar stock:', stockResult.errores);
+          }
         } catch (stockError) {
           console.error('Error actualizando stock:', stockError);
+          // No fallar el pedido si hay error de stock
         }
 
-        limpiar()
-        router.push(`/checkout/resultado?id=${pedido.id}&tipo=contraentrega`)
-        return
+        limpiar();
+        router.push(`/checkout/resultado?status=contraentrega&id=${pedido.id}`);
+        return;
       }
 
-      // Para otros métodos de pago, crear preferencia de MercadoPago
-      const res = await fetch("/api/crear-preferencia", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+      // Para otros métodos de pago (tarjetas y PSE), crear preferencia de MercadoPago
+      const response = await fetch('/api/crear-preferencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           items,
           formulario: {
             ...formulario,
-            pedidoId: pedido.id
+            envioSeleccionado: cotizacionEnvio
           },
           subtotal,
           envio: costoEnvio,
           total
-        }),
-      })
+        })
+      });
       
-      const data = await res.json()
+      if (!response.ok) {
+        throw new Error('Error al crear la preferencia de pago');
+      }
+      
+      const data = await response.json();
       
       if (data.url) {
-        window.location.href = data.url
+        // Redirigir a MercadoPago
+        window.location.href = data.url;
       } else {
-        setError("Error al procesar el pago. Intenta de nuevo.")
+        throw new Error('No se recibió URL de pago');
       }
-    } catch (err) {
-      console.error('Error en checkout:', err)
-      setError("Error de conexión. Intenta de nuevo.")
+    } catch (error) {
+      console.error("Error procesando pedido:", error);
+      setError("Error al procesar el pedido: " + error.message);
+    } finally {
+      setCargando(false);
     }
-    
-    setCargando(false)
   }
 
   if (items.length === 0) {

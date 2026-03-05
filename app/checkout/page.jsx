@@ -292,7 +292,7 @@ const DEPARTAMENTOS_CIUDADES = {
 };
 
 export default function Checkout() {
-  const { items, vaciarCarrito } = useCarrito();
+  const { items, vaciarCarrito, actualizarCantidad, eliminarDelCarrito } = useCarrito();
   const [formulario, setFormulario] = useState({
     nombre: "",
     email: "",
@@ -433,6 +433,74 @@ export default function Checkout() {
     setCargando(true);
     
     try {
+      // Validar stock actual antes de proceder
+      console.log("Validando stock antes del pago...");
+      const stockErrors = [];
+      
+      for (const item of items) {
+        const { data: producto, error } = await supabase
+          .from('productos')
+          .select('stock, nombre')
+          .eq('id', item.id)
+          .single();
+          
+        if (error) {
+          console.error('Error obteniendo producto:', error);
+          continue;
+        }
+        
+        if (!producto) {
+          stockErrors.push(`Producto "${item.nombre}" no encontrado`);
+          continue;
+        }
+        
+        if (producto.stock < item.cantidad) {
+          stockErrors.push({
+            id: item.id,
+            nombre: producto.nombre,
+            disponible: producto.stock,
+            solicitado: item.cantidad
+          });
+        }
+      }
+      
+      // Si hay errores de stock, mostrar alerta con opciones
+      if (stockErrors.length > 0) {
+        const problemas = stockErrors.map(error => {
+          if (typeof error === 'string') return error;
+          return `${error.nombre}: tienes ${error.solicitado} en carrito, solo quedan ${error.disponible} disponibles`;
+        }).join('\n');
+        
+        const accion = confirm(
+          `⚠️ PROBLEMA DE STOCK:\n\n${problemas}\n\n` +
+          `¿Quieres ajustar automáticamente las cantidades a las disponibles?\n\n` +
+          `• OK: Ajustar cantidades automáticamente\n` +
+          `• Cancelar: Ir al carrito para ajustar manualmente`
+        );
+        
+        if (accion) {
+          // Ajustar cantidades automáticamente
+          for (const error of stockErrors) {
+            if (typeof error === 'object') {
+              if (error.disponible > 0) {
+                actualizarCantidad(error.id, error.disponible);
+              } else {
+                eliminarDelCarrito(error.id);
+              }
+            }
+          }
+          
+          alert('✅ Cantidades ajustadas. Puedes proceder con el pago.');
+          setCargando(false);
+          return;
+        } else {
+          // Redirigir al carrito
+          router.push('/carrito');
+          setCargando(false);
+          return;
+        }
+      }
+      
       // Si es contraentrega, solo crear pedido y redirigir
       if (formulario.metodoPago === 'contraentrega') {
         const pedidoData = {
