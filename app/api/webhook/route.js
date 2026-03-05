@@ -11,15 +11,8 @@ const supabase = createClient(
 )
 
 export async function GET(request) {
-  // MercadoPago hace verificaciones GET del webhook
-  console.log("Webhook GET verificación desde:", request.url)
-  return new Response("OK", { 
-    status: 200,
-    headers: {
-      'Content-Type': 'text/plain',
-      'Cache-Control': 'no-cache'
-    }
-  })
+  console.log(`[${new Date().toISOString()}] Webhook GET verification`)
+  return Response.json({ status: "ok" })
 }
 
 export async function OPTIONS(request) {
@@ -42,22 +35,10 @@ export async function POST(request) {
     console.log("Headers recibidos:", Object.fromEntries(request.headers.entries()))
     console.log("Webhook body:", JSON.stringify(body, null, 2))
 
-    // Responder inmediatamente a MercadoPago para evitar reintentos
-    const response = new Response("OK", { 
-      status: 200,
-      headers: {
-        'Content-Type': 'text/plain',
-        'Cache-Control': 'no-cache',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
-    })
-
     // Manejar notificaciones de prueba
     if (body.live_mode === false && body.data?.id === "123456") {
       console.log("Notificación de prueba recibida correctamente")
-      return response
+      return Response.json({ status: "ok" })
     }
 
     // Procesar solo notificaciones de tipo payment
@@ -107,10 +88,9 @@ export async function POST(request) {
       }
     }
 
-    return response
+    return Response.json({ status: "ok" })
   } catch (error) {
     console.error("Webhook error general:", error)
-    // Siempre devolver 200 para evitar reintentos de MercadoPago
-    return new Response("ERROR", { status: 200 })
+    return Response.json({ status: "error", message: error.message }, { status: 200 })
   }
 }

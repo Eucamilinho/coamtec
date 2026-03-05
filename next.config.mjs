@@ -7,27 +7,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/api/webhook',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
-          },
-        ],
-      },
-      {
         source: '/(.*)\\.(jpg|jpeg|png|svg|webp|avif|gif)$',
         headers: [
           {
@@ -56,14 +35,6 @@ const nextConfig = {
       },
     ];
   },
-  async redirects() {
-    return [];
-  },
-  async rewrites() {
-    return [];
-  },
-  trailingSlash: false,
-  skipTrailingSlashRedirect: true,
   images: {
     minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: true,
