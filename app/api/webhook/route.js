@@ -50,7 +50,7 @@ export async function POST(request) {
           paymentInfo.status === "cancelled" ? "cancelado" :
           "pendiente"
 
-        // Actualizar pedido en Supabase usando preference_id o external_reference
+        // Actualizar pedido en Supabase
         const { data, error } = await supabase
           .from("pedidos")
           .update({
@@ -64,6 +64,44 @@ export async function POST(request) {
 
         if (error) {
           console.error("Error actualizando Supabase:", error)
+        } else if (data && data.length > 0 && paymentInfo.status === "approved") {
+          // Si el pago fue aprobado, actualizar stock
+          const pedido = data[0]
+          if (pedido.items && Array.isArray(pedido.items)) {
+            console.log(`Actualizando stock para pedido pagado: ${pedido.id}`)
+            
+            for (const item of pedido.items) {
+              try {
+                // Obtener stock actual del producto
+                const { data: producto, error: prodError } = await supabase
+                  .from("productos")
+                  .select("stock, nombre")
+                  .eq("id", item.id)
+                  .single()
+
+                if (prodError) {
+                  console.error(`Error obteniendo producto ${item.id}:`, prodError)
+                  continue
+                }
+
+                if (producto) {
+                  const nuevoStock = Math.max(0, producto.stock - item.cantidad)
+                  const { error: updateError } = await supabase
+                    .from("productos")
+                    .update({ stock: nuevoStock })
+                    .eq("id", item.id)
+                  
+                  if (updateError) {
+                    console.error(`Error actualizando stock del producto ${item.id}:`, updateError)
+                  } else {
+                    console.log(`✅ Stock actualizado: ${producto.nombre} - ${producto.stock} → ${nuevoStock}`)
+                  }
+                }
+              } catch (stockError) {
+                console.error(`Error procesando stock del producto ${item.id}:`, stockError)
+              }
+            }
+          }
         }
 
       } catch (paymentError) {

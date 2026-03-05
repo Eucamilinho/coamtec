@@ -233,6 +233,55 @@ export default function CheckoutRapido() {
 
       // Si es contraentrega, redirigir al resultado
       if (formulario.metodoPago === 'contraentrega') {
+        // Crear pedido en Supabase
+        const pedidoData = {
+          productos: items,
+          cliente: {
+            nombre: formulario.nombre,
+            email: formulario.email,
+            telefono: formulario.telefono,
+            departamento: formulario.departamento,
+            ciudad: formulario.ciudad,
+            direccion: formulario.direccion,
+            referencia: formulario.referencia
+          },
+          subtotal,
+          costo_envio: costoEnvio,
+          total,
+          metodo_pago: formulario.metodoPago,
+          estado: 'pagado', // Contraentrega se considera pagado
+          proveedor_envio: cotizacionEnvio?.zona || 'zona6',
+          zona_envio: cotizacionEnvio?.nombre || 'Zona 6',
+          tiempo_entrega: cotizacionEnvio?.tiempo || '6-8 días'
+        }
+
+        const { data: pedido, error: errorPedido } = await supabase
+          .from('pedidos')
+          .insert(pedidoData)
+          .select()
+          .single()
+
+        if (errorPedido) {
+          console.error('Error al crear pedido:', errorPedido)
+          setError("Error al procesar el pedido. Intenta de nuevo.")
+          setCargando(false)
+          return
+        }
+
+        // Actualizar stock para contraentrega
+        try {
+          const stockResponse = await fetch('/api/actualizar-stock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items })
+          });
+          
+          const stockResult = await stockResponse.json();
+          console.log('Resultado actualización stock:', stockResult);
+        } catch (stockError) {
+          console.error('Error actualizando stock:', stockError);
+        }
+
         limpiar()
         router.push(`/checkout/resultado?id=${pedido.id}&tipo=contraentrega`)
         return

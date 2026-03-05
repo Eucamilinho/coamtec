@@ -433,57 +433,89 @@ export default function Checkout() {
     setCargando(true);
     
     try {
-      // Crear el pedido en la base de datos
-      const pedidoData = {
-        // Información del cliente
-        nombre: formulario.nombre,
-        email: formulario.email,
-        telefono: formulario.telefono,
+      // Si es contraentrega, solo crear pedido y redirigir
+      if (formulario.metodoPago === 'contraentrega') {
+        const pedidoData = {
+          nombre: formulario.nombre,
+          email: formulario.email,
+          telefono: formulario.telefono,
+          departamento: formulario.departamento,
+          ciudad: formulario.ciudad,
+          direccion: formulario.direccion,
+          referencia: formulario.referencia,
+          metodo_pago: formulario.metodoPago,
+          proveedor_envio: envioSeleccionado ? envioSeleccionado.empresa : 'Envío estándar',
+          costo_envio: envio,
+          tiempo_entrega: envioSeleccionado ? envioSeleccionado.tiempoEntrega : '3-5 días hábiles',
+          zona_envio: envioSeleccionado ? envioSeleccionado.zona : 'zona3',
+          subtotal,
+          total,
+          items,
+          estado: 'pagado' // Contraentrega se considera pagado inmediatamente
+        };
         
-        // Dirección de envío
-        departamento: formulario.departamento,
-        ciudad: formulario.ciudad,
-        direccion: formulario.direccion,
-        referencia: formulario.referencia,
+        const { error } = await supabase
+          .from('pedidos')
+          .insert([pedidoData]);
         
-        // Método de pago
-        metodo_pago: formulario.metodoPago,
+        if (error) throw error;
+
+        // Actualizar stock para contraentrega
+        try {
+          const stockResponse = await fetch('/api/actualizar-stock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items })
+          });
+          
+          const stockResult = await stockResponse.json();
+          console.log('Resultado actualización stock:', stockResult);
+          
+          if (!stockResult.success) {
+            console.warn('Algunos productos no pudieron actualizar stock:', stockResult.errores);
+          }
+        } catch (stockError) {
+          console.error('Error actualizando stock:', stockError);
+          // No fallar el pedido si hay error de stock
+        }
         
-        // Información de envío
-        proveedor_envio: envioSeleccionado ? envioSeleccionado.empresa : 'Envío estándar',
-        costo_envio: envio,
-        tiempo_entrega: envioSeleccionado ? envioSeleccionado.tiempoEntrega : '3-5 días hábiles',
-        zona_envio: envioSeleccionado ? envioSeleccionado.zona : 'zona3',
-        
-        // Totales
-        subtotal: subtotal,
-        envio: envio,
-        total: total,
-        
-        // Productos
-        items: items,
-        
-        // Estado inicial
-        estado: 'pendiente'
-      };
-      
-      const { data, error } = await supabase
-        .from('pedidos')
-        .insert([pedidoData])
-        .select();
-      
-      if (error) {
-        throw error;
+        vaciarCarrito();
+        router.push("/checkout/resultado?status=contraentrega");
+        return;
       }
       
-      console.log('Pedido creado exitosamente:', data);
+      // Para tarjetas y PSE, usar MercadoPago
+      const response = await fetch('/api/crear-preferencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items,
+          formulario: {
+            ...formulario,
+            envioSeleccionado
+          },
+          subtotal,
+          envio,
+          total
+        })
+      });
       
-      // Vaciar carrito y redirigir
-      vaciarCarrito();
-      router.push("/checkout/resultado?success=true");
+      if (!response.ok) {
+        throw new Error('Error al crear la preferencia de pago');
+      }
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        // Redirigir a MercadoPago
+        window.location.href = data.url;
+      } else {
+        throw new Error('No se recibió URL de pago');
+      }
+      
     } catch (error) {
       console.error("Error procesando pedido:", error);
-      alert("Error al procesar el pedido. Intenta de nuevo.");
+      alert("Error al procesar el pedido: " + error.message);
     } finally {
       setCargando(false);
     }
