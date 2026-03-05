@@ -322,7 +322,7 @@ export default function Checkout() {
   };
 
   const subtotal = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
-  const envio = 0; // TEMPORAL: Envío gratis para pruebas de pago
+  const envio = envioSeleccionado ? envioSeleccionado.precio : (subtotal >= 150000 ? 0 : 15000);
   const total = subtotal + envio;
   
   // Verificar si contraentrega está disponible para la ciudad seleccionada
