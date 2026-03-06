@@ -86,10 +86,18 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
   }, []);
 
 
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {}
+  }
+
   const cargarPedidos = async () => {
     setCargandoPedidos(true)
     try {
-      const res = await fetch("/api/pedidos")
+      const headers = await getAuthHeaders()
+      const res = await fetch("/api/pedidos", { headers })
       const data = await res.json()
       if (res.ok) setPedidos(data)
     } catch (err) {
@@ -100,7 +108,8 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
 
   const cargarAnalytics = async () => {
     try {
-      const res = await fetch("/api/analytics")
+      const headers = await getAuthHeaders()
+      const res = await fetch("/api/analytics", { headers })
       const data = await res.json()
       if (res.ok) setAnalytics(data)
     } catch (err) {

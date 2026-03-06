@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { verificarAdmin } from "../../lib/auth"
 
 // Cliente con service_role_key - bypassa RLS
 const supabase = createClient(
@@ -7,7 +8,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// GET - Listar todos los productos
+// GET - Listar todos los productos (público, no requiere auth)
 export async function GET() {
   const { data, error } = await supabase
     .from("productos")
@@ -20,8 +21,11 @@ export async function GET() {
   return NextResponse.json(data)
 }
 
-// POST - Crear producto
+// POST - Crear producto (requiere auth)
 export async function POST(req) {
+  const auth = await verificarAdmin(req)
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
+
   const producto = await req.json()
   const { data, error } = await supabase
     .from("productos")
@@ -35,8 +39,11 @@ export async function POST(req) {
   return NextResponse.json(data[0])
 }
 
-// PUT - Editar producto
+// PUT - Editar producto (requiere auth)
 export async function PUT(req) {
+  const auth = await verificarAdmin(req)
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
+
   const { id, ...resto } = await req.json()
   const { data, error } = await supabase
     .from("productos")
@@ -51,8 +58,11 @@ export async function PUT(req) {
   return NextResponse.json(data[0])
 }
 
-// DELETE - Eliminar producto
+// DELETE - Eliminar producto (requiere auth)
 export async function DELETE(req) {
+  const auth = await verificarAdmin(req)
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
+
   const { id } = await req.json()
   const { error } = await supabase
     .from("productos")

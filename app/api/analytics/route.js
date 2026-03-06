@@ -1,12 +1,16 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { verificarAdmin } from "../../lib/auth"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-export async function GET() {
+export async function GET(req) {
+  const auth = await verificarAdmin(req)
+  if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
+
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
 

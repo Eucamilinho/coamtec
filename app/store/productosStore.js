@@ -1,5 +1,15 @@
 import { create } from "zustand"
-import { eliminarImagenStorage } from "../lib/supabase"
+import { supabase, eliminarImagenStorage } from "../lib/supabase"
+
+// Helper para obtener headers con token de autenticación
+const getAuthHeaders = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers = { "Content-Type": "application/json" }
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`
+  }
+  return headers
+}
 
 export const useProductos = create((set, get) => ({
   productos: [],
@@ -20,9 +30,10 @@ export const useProductos = create((set, get) => ({
 
   agregarProducto: async (producto) => {
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch("/api/productos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(producto),
       })
       const data = await res.json()
@@ -40,9 +51,10 @@ export const useProductos = create((set, get) => ({
 
   editarProducto: async (productoEditado) => {
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch("/api/productos", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(productoEditado),
       })
       const data = await res.json()
@@ -63,10 +75,8 @@ export const useProductos = create((set, get) => ({
   },
 
   eliminarProducto: async (id) => {
-    // Primero obtenemos las imágenes del producto del state local
     const producto = get().productos.find((p) => p.id === id)
 
-    // Eliminamos todas las imágenes del storage
     if (producto) {
       await eliminarImagenStorage(producto.imagen)
       if (producto.imagenes?.length > 0) {
@@ -77,9 +87,10 @@ export const useProductos = create((set, get) => ({
     }
 
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch("/api/productos", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ id }),
       })
       if (res.ok) {
