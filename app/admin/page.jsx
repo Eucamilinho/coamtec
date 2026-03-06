@@ -237,11 +237,24 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
 
   const handleSubmit = async () => {
     if (!formulario.nombre || !formulario.precio) return;
+
+    // Sanitizar campos numéricos: convertir "" a 0
+    const datosLimpios = {
+      ...formulario,
+      precio: Number(formulario.precio) || 0,
+      descuento: Number(formulario.descuento) || 0,
+      stock: Number(formulario.stock) || 0,
+      peso: Number(formulario.peso) || 0,
+      alto: Number(formulario.alto) || 0,
+      ancho: Number(formulario.ancho) || 0,
+      largo: Number(formulario.largo) || 0,
+    }
+
     if (editando) {
-      await editarProducto({ ...formulario, id: editando });
+      await editarProducto({ ...datosLimpios, id: editando });
       setEditando(null);
     } else {
-      await agregarProducto(formulario);
+      await agregarProducto(datosLimpios);
     }
     // Notificar a buscadores del nuevo/actualizado producto
     pingSearchEngines();
