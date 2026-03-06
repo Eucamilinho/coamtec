@@ -1,65 +1,99 @@
 import { create } from "zustand"
-import { supabase, eliminarImagenStorage } from "../lib/supabase"
+import { eliminarImagenStorage } from "../lib/supabase"
 
-export const useProductos = create((set) => ({
+export const useProductos = create((set, get) => ({
   productos: [],
   cargando: false,
 
   cargarProductos: async () => {
-  set({ cargando: true })
-  const { data, error } = await supabase
-    .from("productos")
-    .select("*")
-    .order("created_at", { ascending: false })
-  if (error) console.error("Error cargando productos:", error)
-  else set({ productos: data })
-  set({ cargando: false })
-},
-
+    set({ cargando: true })
+    try {
+      const res = await fetch("/api/productos")
+      const data = await res.json()
+      if (res.ok) set({ productos: data })
+      else console.error("Error cargando productos:", data.error)
+    } catch (err) {
+      console.error("Error cargando productos:", err)
+    }
+    set({ cargando: false })
+  },
 
   agregarProducto: async (producto) => {
-    const { data, error } = await supabase
-      .from("productos")
-      .insert([producto])
-      .select()
-    if (error) console.error("Error agregando producto:", error)
-    else set((state) => ({ productos: [data[0], ...state.productos] }))
+    try {
+      const res = await fetch("/api/productos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(producto),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        set((state) => ({ productos: [data, ...state.productos] }))
+      } else {
+        console.error("Error agregando producto:", data.error)
+        alert("Error al agregar producto: " + data.error)
+      }
+    } catch (err) {
+      console.error("Error agregando producto:", err)
+      alert("Error al agregar producto")
+    }
   },
 
   editarProducto: async (productoEditado) => {
-    const { id, ...resto } = productoEditado
-    const { error } = await supabase
-      .from("productos")
-      .update(resto)
-      .eq("id", id)
-    if (error) console.error("Error editando producto:", error)
-    else set((state) => ({
-      productos: state.productos.map((p) => p.id === id ? productoEditado : p),
-    }))
+    try {
+      const res = await fetch("/api/productos", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productoEditado),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        set((state) => ({
+          productos: state.productos.map((p) =>
+            p.id === productoEditado.id ? { ...productoEditado, ...data } : p
+          ),
+        }))
+      } else {
+        console.error("Error editando producto:", data.error)
+        alert("Error al editar producto: " + data.error)
+      }
+    } catch (err) {
+      console.error("Error editando producto:", err)
+      alert("Error al editar producto")
+    }
   },
 
   eliminarProducto: async (id) => {
-    // Primero obtenemos las imágenes del producto
-    const { data } = await supabase
-      .from("productos")
-      .select("imagen, imagenes")
-      .eq("id", id)
-      .single()
+    // Primero obtenemos las imágenes del producto del state local
+    const producto = get().productos.find((p) => p.id === id)
 
     // Eliminamos todas las imágenes del storage
-    if (data) {
-      await eliminarImagenStorage(data.imagen)
-      if (data.imagenes?.length > 0) {
-        for (const img of data.imagenes) {
+    if (producto) {
+      await eliminarImagenStorage(producto.imagen)
+      if (producto.imagenes?.length > 0) {
+        for (const img of producto.imagenes) {
           await eliminarImagenStorage(img)
         }
       }
     }
 
-    const { error } = await supabase.from("productos").delete().eq("id", id)
-    if (error) console.error("Error eliminando producto:", error)
-    else set((state) => ({
-      productos: state.productos.filter((p) => p.id !== id),
-    }))
+    try {
+      const res = await fetch("/api/productos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+      if (res.ok) {
+        set((state) => ({
+          productos: state.productos.filter((p) => p.id !== id),
+        }))
+      } else {
+        const data = await res.json()
+        console.error("Error eliminando producto:", data.error)
+        alert("Error al eliminar producto: " + data.error)
+      }
+    } catch (err) {
+      console.error("Error eliminando producto:", err)
+      alert("Error al eliminar producto")
+    }
   },
 }))

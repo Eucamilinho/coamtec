@@ -88,63 +88,24 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
 
   const cargarPedidos = async () => {
     setCargandoPedidos(true)
-    const { data } = await supabase
-      .from("pedidos")
-      .select("*")
-      .order("created_at", { ascending: false })
-    if (data) setPedidos(data)
+    try {
+      const res = await fetch("/api/pedidos")
+      const data = await res.json()
+      if (res.ok) setPedidos(data)
+    } catch (err) {
+      console.error("Error cargando pedidos:", err)
+    }
     setCargandoPedidos(false)
   }
 
   const cargarAnalytics = async () => {
-    const hoy = new Date()
-    hoy.setHours(0, 0, 0, 0)
-
-    // Total de visitas
-    const { count: totalVisitas } = await supabase
-      .from("analytics")
-      .select("*", { count: "exact", head: true })
-
-    // Visitas hoy
-    const { count: visitasHoy } = await supabase
-      .from("analytics")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", hoy.toISOString())
-
-    // Visitantes únicos total
-    const { data: uniqueTotal } = await supabase
-      .from("analytics")
-      .select("visitor_id")
-    const visitasUnicas = new Set(uniqueTotal?.map(v => v.visitor_id)).size
-
-    // Visitantes únicos hoy
-    const { data: uniqueHoy } = await supabase
-      .from("analytics")
-      .select("visitor_id")
-      .gte("created_at", hoy.toISOString())
-    const visitasUnicasHoy = new Set(uniqueHoy?.map(v => v.visitor_id)).size
-
-    // Top páginas
-    const { data: paginasData } = await supabase
-      .from("analytics")
-      .select("page")
-    
-    const conteo = {}
-    paginasData?.forEach(p => {
-      conteo[p.page] = (conteo[p.page] || 0) + 1
-    })
-    const topPaginas = Object.entries(conteo)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([page, count]) => ({ page, count }))
-
-    setAnalytics({
-      totalVisitas: totalVisitas || 0,
-      visitasHoy: visitasHoy || 0,
-      visitasUnicas,
-      visitasUnicasHoy,
-      topPaginas,
-    })
+    try {
+      const res = await fetch("/api/analytics")
+      const data = await res.json()
+      if (res.ok) setAnalytics(data)
+    } catch (err) {
+      console.error("Error cargando analytics:", err)
+    }
   }
 
   useEffect(() => {
