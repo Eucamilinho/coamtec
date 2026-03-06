@@ -632,17 +632,17 @@ export default function Checkout() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Formulario */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Información personal */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
                 <Phone size={20} className="text-green-500" />
                 Información de contacto
               </h2>
               
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Nombre completo *
@@ -703,13 +703,13 @@ export default function Checkout() {
             </div>
 
             {/* Dirección de envío */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
                 <MapPin size={20} className="text-green-500" />
                 Dirección de envío
               </h2>
               
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Departamento *
@@ -782,17 +782,17 @@ export default function Checkout() {
 
             {/* Opciones de envío */}
             {formulario.ciudad && (
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
                   <Truck size={20} className="text-green-500" />
                   Opciones de envío
                 </h2>
                 
                 {cotizandoEnvio ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
-                      <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Cotizando envío con Servientrega, Envía e Interrapidísimo...</span>
+                    <div className="flex flex-col sm:flex-row items-center gap-3 text-zinc-600 dark:text-zinc-400 text-center">
+                      <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                      <span className="text-sm sm:text-base">Cotizando envío con Servientrega, Envía e Interrapidísimo...</span>
                     </div>
                   </div>
                 ) : opcionesEnvio.length > 0 ? (
@@ -800,7 +800,7 @@ export default function Checkout() {
                     {opcionesEnvio.map((opcion, index) => (
                       <label
                         key={index}
-                        className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                        className={`flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition ${
                           envioSeleccionado?.empresa === opcion.empresa
                             ? "border-green-500 bg-green-50 dark:bg-green-900/20"
                             : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
@@ -811,25 +811,25 @@ export default function Checkout() {
                           name="envio"
                           checked={envioSeleccionado?.empresa === opcion.empresa}
                           onChange={() => setEnvioSeleccionado(opcion)}
-                          className="w-4 h-4 text-green-500 focus:ring-green-500"
+                          className="w-4 h-4 text-green-500 focus:ring-green-500 mt-1 sm:mt-0 flex-shrink-0"
                         />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-zinc-900 dark:text-white">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium text-sm sm:text-base text-zinc-900 dark:text-white">
                               {opcion.empresa}
                             </p>
                             {index === 0 && (
-                              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 sm:py-1 rounded-full font-medium">
                                 Más económico
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
                             Entrega: {opcion.tiempoEntrega}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-zinc-900 dark:text-white">
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">
                             {opcion.precio === 0 ? '¡Gratis!' : `$${opcion.precio.toLocaleString()}`}
                           </p>
                           {opcion.precio > 0 && subtotal >= 150000 && (
@@ -839,8 +839,8 @@ export default function Checkout() {
                       </label>
                     ))}
                     
-                    <div className="mt-4 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                      <div className="grid grid-cols-2 gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+                    <div className="mt-4 p-3 sm:p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
                         <div>
                           <p><strong>Peso estimado:</strong> {(calcularPesoTotal(items) / 1000).toFixed(1)} kg</p>
                           <p><strong>Valor declarado:</strong> ${subtotal.toLocaleString()}</p>
@@ -893,15 +893,15 @@ export default function Checkout() {
             )}
 
             {/* Método de pago */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
                 <CreditCard size={20} className="text-green-500" />
                 Método de pago
               </h2>
               
               <div className="space-y-3">
                 {contraentregaDisponible ? (
-                  <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                  <label className={`flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition ${
                     formulario.metodoPago === "contraentrega" 
                       ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
                       : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
@@ -912,35 +912,35 @@ export default function Checkout() {
                       value="contraentrega"
                       checked={formulario.metodoPago === "contraentrega"}
                       onChange={handleChange}
-                      className="w-4 h-4 text-green-500 focus:ring-green-500"
+                      className="w-4 h-4 text-green-500 focus:ring-green-500 mt-1 sm:mt-0 flex-shrink-0"
                     />
-                    <Wallet size={20} className="text-zinc-600 dark:text-zinc-400" />
-                    <div className="flex-1">
-                      <p className="font-medium text-zinc-900 dark:text-white">Contraentrega</p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">Paga cuando recibas tu pedido</p>
+                    <Wallet size={20} className="text-zinc-600 dark:text-zinc-400 flex-shrink-0 hidden sm:block" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm sm:text-base text-zinc-900 dark:text-white">Contraentrega</p>
+                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">Paga cuando recibas tu pedido</p>
                     </div>
-                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 sm:py-1 rounded-full font-medium flex-shrink-0">
                       Recomendado
                     </span>
                   </label>
                 ) : (
-                  <div className="p-4 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl opacity-50">
-                    <div className="flex items-center gap-4">
+                  <div className="p-3 sm:p-4 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl opacity-50">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                       <input
                         type="radio"
                         disabled
-                        className="w-4 h-4 text-zinc-300"
+                        className="w-4 h-4 text-zinc-300 mt-1 sm:mt-0 flex-shrink-0"
                       />
-                      <Wallet size={20} className="text-zinc-400" />
-                      <div className="flex-1">
-                        <p className="font-medium text-zinc-500">Contraentrega</p>
-                        <p className="text-sm text-zinc-400">Solo disponible en Bucaramanga, Floridablanca, Girón y Piedecuesta</p>
+                      <Wallet size={20} className="text-zinc-400 flex-shrink-0 hidden sm:block" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm sm:text-base text-zinc-500">Contraentrega</p>
+                        <p className="text-xs sm:text-sm text-zinc-400">Solo disponible en Bucaramanga, Floridablanca, Girón y Piedecuesta</p>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                <label className={`flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition ${
                   formulario.metodoPago === "transferencia" 
                     ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
                     : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
@@ -951,12 +951,12 @@ export default function Checkout() {
                     value="transferencia"
                     checked={formulario.metodoPago === "transferencia"}
                     onChange={handleChange}
-                    className="w-4 h-4 text-green-500 focus:ring-green-500"
+                    className="w-4 h-4 text-green-500 focus:ring-green-500 mt-1 sm:mt-0 flex-shrink-0"
                   />
-                  <Building2 size={20} className="text-zinc-600 dark:text-zinc-400" />
-                  <div className="flex-1">
-                    <p className="font-medium text-zinc-900 dark:text-white">Transferencia bancaria</p>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">Consigna o transferencia a nuestra cuenta</p>
+                  <Building2 size={20} className="text-zinc-600 dark:text-zinc-400 flex-shrink-0 hidden sm:block" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm sm:text-base text-zinc-900 dark:text-white">Transferencia bancaria</p>
+                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">Consigna o transferencia a nuestra cuenta</p>
                   </div>
                 </label>
               </div>
@@ -965,7 +965,7 @@ export default function Checkout() {
 
           {/* Resumen del pedido */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sticky top-24">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 lg:sticky lg:top-24">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
                 Resumen del pedido
               </h2>
