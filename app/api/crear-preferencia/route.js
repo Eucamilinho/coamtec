@@ -69,11 +69,11 @@ export async function POST(request) {
           },
         },
         back_urls: {
-          success: `https://coamtec.vercel.app/checkout/resultado?status=success`,
-          failure: `https://coamtec.vercel.app/checkout/resultado?status=failure`,
-          pending: `https://coamtec.vercel.app/checkout/resultado?status=pending`,
+          success: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=success`,
+          failure: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=failure`,
+          pending: `${process.env.NEXT_PUBLIC_URL}/checkout/resultado?status=pending`,
         },
-        notification_url: `https://coamtec.vercel.app/api/webhook`,
+        notification_url: `${process.env.NEXT_PUBLIC_URL}/api/webhook`,
         auto_return: "approved",
         payment_methods: {
           excluded_payment_methods: [],
