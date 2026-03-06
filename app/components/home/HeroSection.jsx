@@ -90,11 +90,11 @@ export default function HeroSection({ featuredProducts = [] }) {
             {/* Social proof - solo desktop */}
             <div className="hidden lg:flex flex-wrap items-center gap-4 pt-2">
               <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
+                {/* <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 border-2 border-white dark:border-zinc-950" />
                   ))}
-                </div>
+                </div> */}
                 <div className="text-xs">
                   <span className="font-bold text-zinc-900 dark:text-white">+2,000</span>
                   <span className="text-zinc-500 dark:text-zinc-400 ml-1">clientes</span>
