@@ -313,6 +313,16 @@ export default function CheckoutRapido() {
   const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
   const router = useRouter();
 
+  // Refs para scroll automático al campo con error
+  const campoRefs = {
+    nombre: useRef(null),
+    email: useRef(null),
+    telefono: useRef(null),
+    departamento: useRef(null),
+    ciudad: useRef(null),
+    direccion: useRef(null),
+  };
+
   // Función para calcular peso total del pedido
   const calcularPesoTotal = (items) => {
     return items.reduce((total, item) => {
@@ -423,6 +433,21 @@ export default function CheckoutRapido() {
     }
     
     setErrores(nuevosErrores);
+    
+    // Scroll automático al primer campo con error
+    if (Object.keys(nuevosErrores).length > 0) {
+      const primerCampoConError = Object.keys(nuevosErrores)[0];
+      const ref = campoRefs[primerCampoConError];
+      if (ref?.current) {
+        ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Intentar enfocar el input si es posible
+        setTimeout(() => {
+          const input = ref.current.querySelector('input, textarea, select');
+          if (input && !input.disabled) input.focus();
+        }, 500);
+      }
+    }
+    
     return Object.keys(nuevosErrores).length === 0;
   };
 
@@ -646,7 +671,7 @@ export default function CheckoutRapido() {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div ref={campoRefs.nombre}>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Nombre completo *
                   </label>
@@ -665,7 +690,7 @@ export default function CheckoutRapido() {
                   )}
                 </div>
                 
-                <div>
+                <div ref={campoRefs.email}>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Email *
                   </label>
@@ -684,7 +709,7 @@ export default function CheckoutRapido() {
                   )}
                 </div>
                 
-                <div className="md:col-span-2">
+                <div className="md:col-span-2" ref={campoRefs.telefono}>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Teléfono / WhatsApp *
                   </label>
@@ -713,7 +738,7 @@ export default function CheckoutRapido() {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div ref={campoRefs.departamento}>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Departamento *
                   </label>
@@ -730,7 +755,7 @@ export default function CheckoutRapido() {
                   )}
                 </div>
                 
-                <div>
+                <div ref={campoRefs.ciudad}>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Ciudad *
                   </label>
@@ -748,7 +773,7 @@ export default function CheckoutRapido() {
                   )}
                 </div>
                 
-                <div className="md:col-span-2">
+                <div className="md:col-span-2" ref={campoRefs.direccion}>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     Dirección completa *
                   </label>
