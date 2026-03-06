@@ -88,28 +88,16 @@ export default function Navbar() {
       <div className="md:hidden bg-zinc-900 text-white text-[10px] font-medium tracking-wide">
         <div className="flex items-center justify-center gap-2 py-1.5 px-3">
           <Truck size={10} className="text-green-400 flex-shrink-0" />
-          <span className="text-green-400">ENVÍO GRATIS +$99K</span>
-          <span className="mx-1">•</span>
-          <span>PAGA DESPUÉS</span>
+          <span className="text-green-400">ENVÍO GRATIS +$500K</span>
         </div>
       </div>
 
       {/* Desktop: Utility bar completa */}
       <div className="hidden md:block bg-zinc-900 text-white text-[11px] font-medium tracking-wide">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between py-2">
-          <div className="flex items-center gap-6">
-            <a href="#" className="flex items-center gap-1.5 hover:text-green-400 transition">
-              <CreditCard size={12} />
-              <span>COMPRA AHORA, PAGA DESPUÉS</span>
-            </a>
-            <a href="tel:+573001112233" className="flex items-center gap-1.5 hover:text-green-400 transition">
-              <Phone size={12} />
-              <span>¿NECESITAS AYUDA? LLÁMANOS</span>
-            </a>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-end py-2">
           <div className="flex items-center gap-1.5 text-green-400">
             <Truck size={12} />
-            <span>ENVÍO GRATIS EN PEDIDOS +$99.000</span>
+            <span>ENVÍO GRATIS EN PEDIDOS +$500.000</span>
           </div>
         </div>
       </div>
@@ -300,19 +288,19 @@ export default function Navbar() {
           <div className="flex whitespace-nowrap py-1.5 md:py-2 text-[10px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider [animation:marquee_20s_linear_infinite]">
             <span className="mx-4 md:mx-8">🔥 SALE</span>
             <span className="mx-2 md:mx-8">•</span>
-            <span className="mx-4 md:mx-8">ENVÍO GRATIS +$99K</span>
+            <span className="mx-4 md:mx-8">ENVÍO GRATIS +$500K</span>
             <span className="mx-2 md:mx-8">•</span>
             <span className="mx-4 md:mx-8">NUEVOS</span>
             <span className="mx-2 md:mx-8">•</span>
             <span className="mx-4 md:mx-8">🔥 SALE</span>
             <span className="mx-2 md:mx-8">•</span>
-            <span className="mx-4 md:mx-8">ENVÍO GRATIS +$99K</span>
+            <span className="mx-4 md:mx-8">ENVÍO GRATIS +$500K</span>
             <span className="mx-2 md:mx-8">•</span>
             <span className="mx-4 md:mx-8">NUEVOS</span>
             <span className="mx-2 md:mx-8">•</span>
             <span className="mx-4 md:mx-8">🔥 SALE</span>
             <span className="mx-2 md:mx-8">•</span>
-            <span className="mx-4 md:mx-8">ENVÍO GRATIS +$99K</span>
+            <span className="mx-4 md:mx-8">ENVÍO GRATIS +$500K</span>
             <span className="mx-2 md:mx-8">•</span>
             <span className="mx-4 md:mx-8">NUEVOS</span>
             <span className="mx-2 md:mx-8">•</span>

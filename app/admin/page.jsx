@@ -250,17 +250,21 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
       largo: Number(formulario.largo) || 0,
     }
 
+    let ok = false
     if (editando) {
-      await editarProducto({ ...datosLimpios, id: editando });
-      setEditando(null);
+      ok = await editarProducto({ ...datosLimpios, id: editando });
+      if (ok) setEditando(null);
     } else {
-      await agregarProducto(datosLimpios);
+      ok = await agregarProducto(datosLimpios);
     }
-    // Notificar a buscadores del nuevo/actualizado producto
-    pingSearchEngines();
-    setFormulario(productoVacio);
-    setPreview(null);
-    setVista("productos");
+
+    if (ok) {
+      // Solo limpiar y volver si fue exitoso
+      pingSearchEngines();
+      setFormulario(productoVacio);
+      setPreview(null);
+      setVista("productos");
+    }
   };
 
   const handleEditar = (producto) => {

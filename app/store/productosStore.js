@@ -39,13 +39,16 @@ export const useProductos = create((set, get) => ({
       const data = await res.json()
       if (res.ok) {
         set((state) => ({ productos: [data, ...state.productos] }))
+        return true
       } else {
         console.error("Error agregando producto:", data.error)
         alert("Error al agregar producto: " + data.error)
+        return false
       }
     } catch (err) {
       console.error("Error agregando producto:", err)
       alert("Error al agregar producto")
+      return false
     }
   },
 
@@ -64,13 +67,16 @@ export const useProductos = create((set, get) => ({
             p.id === productoEditado.id ? { ...productoEditado, ...data } : p
           ),
         }))
+        return true
       } else {
         console.error("Error editando producto:", data.error)
         alert("Error al editar producto: " + data.error)
+        return false
       }
     } catch (err) {
       console.error("Error editando producto:", err)
       alert("Error al editar producto")
+      return false
     }
   },
 

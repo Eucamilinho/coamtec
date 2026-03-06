@@ -85,12 +85,6 @@ export default function HeroSection({ featuredProducts = [] }) {
                 Ver catálogo
                 <ArrowRight size={14} className="sm:w-4 sm:h-4" aria-hidden="true" />
               </Link>
-              <Link
-                href="/checkout"
-                className="rounded-full bg-zinc-900 dark:bg-white px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white dark:text-zinc-900 transition hover:bg-zinc-800 dark:hover:bg-zinc-100"
-              >
-                Comprar ahora
-              </Link>
             </div>
 
             {/* Social proof - solo desktop */}
