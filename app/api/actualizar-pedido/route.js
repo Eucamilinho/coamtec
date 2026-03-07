@@ -65,7 +65,10 @@ export async function POST(request) {
         const telefono = pedido.telefono || pedido.celular || pedido.phone || "";
         const metodoEnvio = pedido.metodo_envio || "";
         const productos = items.map(item => `• *${item.nombre}* x${item.cantidad}`).join("\n");
-        const mensaje = `🛒 *Nuevo pago confirmado en Coam Tec!*\n\n👤 *Cliente:* ${nombre}\n📞 *Teléfono:* ${telefono}\n💰 *Total:* $${total.toLocaleString("es-AR")}\n🏙️ *Ciudad:* ${ciudad}\n🏠 *Dirección:* ${direccion}\n📦 *Envío:* ${metodoEnvio}\n\n*Productos:*\n${productos}`;
+        // Fecha actual en formato DD/MM/YYYY HH:mm
+        const now = new Date();
+        const fecha = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        const mensaje = `🛒 *Nuevo pago confirmado en Coam Tec!*\n\n📅 *Fecha:* ${fecha}\n👤 *Cliente:* ${nombre}\n📞 *Teléfono:* ${telefono}\n💰 *Total:* $${total.toLocaleString("es-AR")}\n🏙️ *Ciudad:* ${ciudad}\n🏠 *Dirección:* ${direccion}\n📦 *Envío:* ${metodoEnvio}\n\n*Productos:*\n${productos}`;
         await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

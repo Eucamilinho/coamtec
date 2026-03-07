@@ -332,7 +332,8 @@ export default function Checkout() {
   };
 
   const subtotal = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
-  const envio = envioSeleccionado ? envioSeleccionado.precio : (subtotal >= 150000 ? 0 : 15000);
+  // Envío gratis solo para compras >= $500.000
+  const envio = envioSeleccionado ? (subtotal >= 500000 ? 0 : envioSeleccionado.precio) : (subtotal >= 500000 ? 0 : 15000);
   const total = subtotal + envio;
   
   // Verificar si contraentrega está disponible para la ciudad seleccionada
@@ -1045,8 +1046,11 @@ export default function Checkout() {
                   </div>
                 </div>
                 
-                {subtotal >= 150000 && (
-                  {/* Envío gratis removido por solicitud */}
+                {subtotal >= 500000 && (
+                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <CheckCircle size={12} />
+                    ¡Envío gratis por compra mayor a $500.000!
+                  </div>
                 )}
                 
                 <div className="border-t border-zinc-200 dark:border-zinc-800 pt-2 flex justify-between font-semibold">
