@@ -356,6 +356,76 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
         {/* Dashboard */}
         {vista === "dashboard" && (
           <div className="flex flex-col gap-8">
+            {/* Botón de prueba de email */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex flex-col md:flex-row items-center gap-4">
+              <span className="text-white font-bold mr-4">Probar email de confirmación</span>
+              <button
+                className="bg-green-400 hover:bg-green-300 text-black font-bold px-4 py-2 rounded-lg transition"
+                onClick={() => setShowTestEmail(true)}
+              >
+                Probar email
+              </button>
+            </div>
+            {/* Modal de prueba de email */}
+            {showTestEmail && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 w-full max-w-md shadow-xl flex flex-col gap-4">
+                  <button
+                    className="absolute top-4 right-4 text-zinc-500 hover:text-red-400"
+                    onClick={() => {
+                      setShowTestEmail(false);
+                      setTestEmail("");
+                      setTestEmailStatus(null);
+                    }}
+                  >
+                    <X size={24} />
+                  </button>
+                  <h3 className="text-xl font-bold text-white mb-2">Enviar email de prueba</h3>
+                  <input
+                    type="email"
+                    placeholder="Email destinatario"
+                    className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-green-400"
+                    value={testEmail}
+                    onChange={e => setTestEmail(e.target.value)}
+                  />
+                  <button
+                    className="bg-green-400 hover:bg-green-300 text-black font-bold px-4 py-2 rounded-lg transition mt-2"
+                    onClick={async () => {
+                      setTestEmailStatus("cargando");
+                      try {
+                        const res = await fetch("/api/test-email", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ email: testEmail })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          setTestEmailStatus("exito");
+                        } else {
+                          setTestEmailStatus(data.error || "error");
+                        }
+                      } catch (err) {
+                        setTestEmailStatus("error");
+                      }
+                    }}
+                    disabled={!testEmail || testEmailStatus === "cargando"}
+                  >
+                    {testEmailStatus === "cargando" ? "Enviando..." : "Enviar"}
+                  </button>
+                  {testEmailStatus === "exito" && (
+                    <div className="text-green-400 font-bold mt-2">¡Email enviado correctamente!</div>
+                  )}
+                  {testEmailStatus && testEmailStatus !== "exito" && testEmailStatus !== "cargando" && (
+                    <div className="text-red-400 font-bold mt-2">{testEmailStatus}</div>
+                  )}
+                </div>
+              </div>
+            )}
+            // ...existing code...
+            // Estado para modal de prueba de email
+            const [showTestEmail, setShowTestEmail] = useState(false);
+            const [testEmail, setTestEmail] = useState("");
+            const [testEmailStatus, setTestEmailStatus] = useState(null);
             <div>
               <h2 className="text-3xl font-black">Dashboard</h2>
               <p className="text-zinc-500 text-sm mt-1">Resumen de tu tienda</p>
