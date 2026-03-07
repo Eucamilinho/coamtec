@@ -855,11 +855,8 @@ export default function Checkout() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-white">
-                            {opcion.precio === 0 ? '¡Gratis!' : `$${opcion.precio.toLocaleString()}`}
+                            {`$${opcion.precio.toLocaleString()}`}
                           </p>
-                          {opcion.precio > 0 && subtotal >= 150000 && (
-                            <p className="text-xs text-green-600 dark:text-green-400">Envío gratis aplicado</p>
-                          )}
                         </div>
                       </label>
                     ))}
@@ -1038,7 +1035,7 @@ export default function Checkout() {
                   <span className="text-zinc-600 dark:text-zinc-400">Envío</span>
                   <div className="text-right">
                     <span className={`${envio === 0 ? 'text-green-500 font-semibold' : 'text-zinc-900 dark:text-white'}`}>
-                      {envio === 0 ? '¡Gratis!' : `$${envio.toLocaleString()}`}
+                      {`$${envio.toLocaleString()}`}
                     </span>
                     {envioSeleccionado && (
                       <p className="text-xs text-zinc-500">
@@ -1049,10 +1046,7 @@ export default function Checkout() {
                 </div>
                 
                 {subtotal >= 150000 && (
-                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    Envío gratis por compra mayor a $150.000
-                  </div>
+                  {/* Envío gratis removido por solicitud */}
                 )}
                 
                 <div className="border-t border-zinc-200 dark:border-zinc-800 pt-2 flex justify-between font-semibold">
