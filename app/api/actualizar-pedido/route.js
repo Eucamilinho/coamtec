@@ -32,6 +32,7 @@ export async function POST(request) {
     if (error) throw error
 
 
+
     // Si fue pagado, restar stock de cada producto
     if (estado === "pagado" && data?.[0]?.items) {
       const pedido = data[0];
@@ -51,6 +52,28 @@ export async function POST(request) {
             .update({ stock: nuevoStock })
             .eq("id", item.id)
         }
+      }
+
+      // Notificación a Telegram (no interrumpe el flujo si falla)
+      try {
+        const nombre = pedido.nombre || "";
+        const total = pedido.total || 0;
+        const ciudad = pedido.ciudad || "";
+        const direccion = pedido.direccion_envio || "";
+        const metodoEnvio = pedido.metodo_envio || "";
+        const productos = items.map(item => `• *${item.nombre}* x${item.cantidad}`).join("\n");
+        const mensaje = `🛒 *Nuevo pago confirmado en Coam Tec!*\n\n👤 *Cliente:* ${nombre}\n💰 *Total:* $${total.toLocaleString("es-AR")}\n🏙️ *Ciudad:* ${ciudad}\n🏠 *Dirección:* ${direccion}\n📦 *Envío:* ${metodoEnvio}\n\n*Productos:*\n${productos}`;
+        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: process.env.TELEGRAM_CHAT_ID,
+            text: mensaje,
+            parse_mode: "Markdown"
+          })
+        });
+      } catch (telegramError) {
+        // Silencioso, no interrumpe el flujo
       }
 
       // Enviar email de confirmación al cliente usando Resend
