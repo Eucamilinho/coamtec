@@ -61,9 +61,11 @@ export async function POST(request) {
         const ciudad = pedido.ciudad || "";
         // Buscar dirección en los posibles campos
         const direccion = pedido.direccion || pedido.direccion_envio || pedido.direccionEntrega || "";
+        // Buscar teléfono en los posibles campos
+        const telefono = pedido.telefono || pedido.celular || pedido.phone || "";
         const metodoEnvio = pedido.metodo_envio || "";
         const productos = items.map(item => `• *${item.nombre}* x${item.cantidad}`).join("\n");
-        const mensaje = `🛒 *Nuevo pago confirmado en Coam Tec!*\n\n👤 *Cliente:* ${nombre}\n💰 *Total:* $${total.toLocaleString("es-AR")}\n🏙️ *Ciudad:* ${ciudad}\n🏠 *Dirección:* ${direccion}\n📦 *Envío:* ${metodoEnvio}\n\n*Productos:*\n${productos}`;
+        const mensaje = `🛒 *Nuevo pago confirmado en Coam Tec!*\n\n👤 *Cliente:* ${nombre}\n📞 *Teléfono:* ${telefono}\n💰 *Total:* $${total.toLocaleString("es-AR")}\n🏙️ *Ciudad:* ${ciudad}\n🏠 *Dirección:* ${direccion}\n📦 *Envío:* ${metodoEnvio}\n\n*Productos:*\n${productos}`;
         await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
