@@ -59,7 +59,8 @@ export async function POST(request) {
         const nombre = pedido.nombre || "";
         const total = pedido.total || 0;
         const ciudad = pedido.ciudad || "";
-        const direccion = pedido.direccion_envio || "";
+        // Buscar dirección en los posibles campos
+        const direccion = pedido.direccion || pedido.direccion_envio || pedido.direccionEntrega || "";
         const metodoEnvio = pedido.metodo_envio || "";
         const productos = items.map(item => `• *${item.nombre}* x${item.cantidad}`).join("\n");
         const mensaje = `🛒 *Nuevo pago confirmado en Coam Tec!*\n\n👤 *Cliente:* ${nombre}\n💰 *Total:* $${total.toLocaleString("es-AR")}\n🏙️ *Ciudad:* ${ciudad}\n🏠 *Dirección:* ${direccion}\n📦 *Envío:* ${metodoEnvio}\n\n*Productos:*\n${productos}`;
@@ -81,7 +82,7 @@ export async function POST(request) {
         // Obtener email y datos del pedido
         const emailCliente = pedido.email;
         const numeroPedido = pedido.id;
-        const direccionEnvio = pedido.direccion_envio || "";
+        const direccionEnvio = pedido.direccion || pedido.direccion_envio || pedido.direccionEntrega || "";
         const total = pedido.total || 0;
         // Renderizar lista de productos
         const productosHtml = items.map(item => `
