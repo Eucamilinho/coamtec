@@ -11,7 +11,6 @@ import {
   Edit,
   Trash2,
   LogOut,
-  Upload,
   Search,
   TrendingUp,
   AlertTriangle,
@@ -36,10 +35,10 @@ const productoVacio = {
   categoria: "",
   stock: "",
   video_tiktok: "",
-  peso: "", // en gramos
-  alto: "", // en centímetros
-  ancho: "", // en centímetros
-  largo: "", // en centímetros
+  peso: "",
+  alto: "",
+  ancho: "",
+  largo: "",
 }
 
 export default function Admin() {
@@ -57,11 +56,13 @@ export default function Admin() {
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [preview, setPreview] = useState(null);
   const [busqueda, setBusqueda] = useState("");
+  const [showTestEmail, setShowTestEmail] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testEmailStatus, setTestEmailStatus] = useState(null);
   const router = useRouter();
   const [pedidos, setPedidos] = useState([])
-const [cargandoPedidos, setCargandoPedidos] = useState(false)
+  const [cargandoPedidos, setCargandoPedidos] = useState(false)
 
-  // Analytics state
   const [analytics, setAnalytics] = useState({
     totalVisitas: 0,
     visitasHoy: 0,
@@ -84,7 +85,6 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
     };
     verificarSesion();
   }, []);
-
 
   const getAuthHeaders = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -135,11 +135,10 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
     );
   }
 
-  // Estadísticas
   const totalProductos = productos.length;
   const totalStock = productos.reduce((acc, p) => acc + Number(p.stock), 0);
   const productosConDescuento = productos.filter((p) => p.descuento > 0).length;
-  const stockBajo = productos.filter((p) => p.stock <= 3 && p.stock > 0).length  
+  const stockBajo = productos.filter((p) => p.stock <= 3 && p.stock > 0).length
   const valorInventario = productos.reduce(
     (acc, p) => acc + Number(p.precio) * Number(p.stock),
     0,
@@ -200,7 +199,6 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
       imagenes: nuevasImagenes,
     };
 
-    // La primera imagen es la portada
     if (indice === 0) {
       actualizado.imagen = data.publicUrl;
       setPreview(data.publicUrl);
@@ -211,34 +209,31 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
   };
 
   const eliminarImagenAdicional = async (indice) => {
-  const url = formulario.imagenes[indice]
-  await eliminarImagenStorage(url)
+    const url = formulario.imagenes[indice]
+    await eliminarImagenStorage(url)
 
-  const nuevasImagenes = formulario.imagenes.filter((_, i) => i !== indice)
-  const actualizado = { ...formulario, imagenes: nuevasImagenes }
+    const nuevasImagenes = formulario.imagenes.filter((_, i) => i !== indice)
+    const actualizado = { ...formulario, imagenes: nuevasImagenes }
 
-  // Si se elimina la portada actualiza imagen principal
-  if (indice === 0) {
-    actualizado.imagen = nuevasImagenes[0] || ""
-    setPreview(nuevasImagenes[0] || null)
+    if (indice === 0) {
+      actualizado.imagen = nuevasImagenes[0] || ""
+      setPreview(nuevasImagenes[0] || null)
+    }
+
+    setFormulario(actualizado)
   }
 
-  setFormulario(actualizado)
-}
-
-  // Notificar a Google/Bing de actualizaciones
   const pingSearchEngines = async () => {
     try {
       await fetch("/api/ping-sitemap", { method: "POST" });
     } catch (e) {
-      // Silent fail - no interrumpir el flujo
+      // Silent fail
     }
   };
 
   const handleSubmit = async () => {
     if (!formulario.nombre || !formulario.precio) return;
 
-    // Sanitizar campos numéricos: convertir "" a 0
     const datosLimpios = {
       ...formulario,
       precio: Number(formulario.precio) || 0,
@@ -259,7 +254,6 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
     }
 
     if (ok) {
-      // Solo limpiar y volver si fue exitoso
       pingSearchEngines();
       setFormulario(productoVacio);
       setPreview(null);
@@ -366,11 +360,12 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                 Probar email
               </button>
             </div>
-            {/* Modal de prueba de email */}
+
             {showTestEmail && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 w-full max-w-md shadow-xl flex flex-col gap-4">
+                <div className="relative bg-zinc-900 border border-zinc-800 rounded-xl p-8 w-full max-w-md shadow-xl flex flex-col gap-4">
                   <button
+                    type="button"
                     className="absolute top-4 right-4 text-zinc-500 hover:text-red-400"
                     onClick={() => {
                       setShowTestEmail(false);
@@ -378,6 +373,7 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                       setTestEmailStatus(null);
                     }}
                   >
+                    <span className="sr-only">Cerrar</span>
                     <X size={24} />
                   </button>
                   <h3 className="text-xl font-bold text-white mb-2">Enviar email de prueba</h3>
@@ -421,63 +417,8 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                 </div>
               </div>
             )}
-            // ...existing code...
-            // Estado para modal de prueba de email
-            const [showTestEmail, setShowTestEmail] = useState(false);
-            const [testEmail, setTestEmail] = useState("");
-            const [testEmailStatus, setTestEmailStatus] = useState(null);
-            <div>
-              <h2 className="text-3xl font-black">Dashboard</h2>
-              <p className="text-zinc-500 text-sm mt-1">Resumen de tu tienda</p>
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                {
-                  label: "Total productos",
-                  value: totalProductos,
-                  icon: <Box size={24} />,
-                  color: "text-blue-400",
-                },
-                {
-                  label: "Unidades en stock",
-                  value: totalStock,
-                  icon: <Package size={24} />,
-                  color: "text-green-400",
-                },
-                {
-                  label: "Con descuento",
-                  value: productosConDescuento,
-                  icon: <Tag size={24} />,
-                  color: "text-yellow-400",
-                },
-                {
-                  label: "Stock bajo",
-                  value: stockBajo,
-                  icon: <AlertTriangle size={24} />,
-                  color: "text-red-400",
-                },
-                { label: "Agotados", value: agotados, icon: <AlertTriangle size={24} />, color: "text-red-400" },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-5"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-zinc-500 text-sm">{stat.label}</p>
-                      <p className={`text-3xl font-black mt-1 ${stat.color}`}>
-                        {stat.value}
-                      </p>
-                    </div>
-                    <span className={stat.color}>{stat.icon}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Valor inventario */}
+            {/* Card valor inventario */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex items-center justify-between">
               <div>
                 <p className="text-zinc-500 text-sm">
@@ -487,7 +428,7 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                   ${valorInventario.toLocaleString()}
                 </p>
               </div>
-              <TrendingUp size={48} className="text-green-400/20" />
+              <span className="text-green-400 text-4xl">↑</span>
             </div>
 
             {/* Analytics */}
@@ -751,7 +692,6 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
             </div>
 
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex flex-col gap-4">
-              {/* Imagen */}
               {/* Imágenes del producto */}
               <div className="flex flex-col gap-2">
                 <label className="text-zinc-400 text-sm font-medium">
@@ -807,8 +747,7 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                   ))}
                 </div>
                 <p className="text-zinc-600 text-xs">
-                  Sube hasta 3 fotos. La primera aparecerá como imagen
-                  principal.
+                  Sube hasta 3 fotos. La primera aparecerá como imagen principal.
                 </p>
               </div>
 
@@ -916,7 +855,7 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                   <Package size={16} />
                   Especificaciones de envío
                 </h3>
-                
+
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="flex flex-col gap-2">
                     <label className="text-zinc-400 text-sm font-medium">
@@ -947,7 +886,7 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
                     <label className="text-zinc-400 text-sm font-medium">
@@ -978,7 +917,7 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
                     />
                   </div>
                 </div>
-                
+
                 <p className="text-zinc-600 text-xs mt-2">
                   Estas medidas se utilizarán para calcular los costos de envío con las empresas de mensajería.
                 </p>
@@ -1004,157 +943,157 @@ const [cargandoPedidos, setCargandoPedidos] = useState(false)
         )}
 
         {/* Vista Pedidos */}
-{vista === "pedidos" && (
-  <div className="flex flex-col gap-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-black text-white">Pedidos</h2>
-      <button
-        onClick={cargarPedidos}
-        className="bg-zinc-800 text-zinc-300 px-4 py-2 rounded-xl text-sm hover:bg-zinc-700 transition flex items-center gap-2"
-      >
-        <RotateCcw size={14} />
-        Actualizar
-      </button>
-    </div>
-
-    {/* Stats rápidos */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {[
-        {
-          label: "Total pedidos",
-          value: pedidos.length,
-          color: "text-blue-400",
-        },
-        {
-          label: "Pagados",
-          value: pedidos.filter(p => p.estado === "pagado").length,
-          color: "text-green-400",
-        },
-        {
-          label: "Pendientes",
-          value: pedidos.filter(p => p.estado === "pendiente").length,
-          color: "text-yellow-400",
-        },
-        {
-          label: "Total ventas",
-          value: `$${pedidos.filter(p => p.estado === "pagado").reduce((acc, p) => acc + p.total, 0).toLocaleString()}`,
-          color: "text-green-400",
-        },
-      ].map((stat) => (
-        <div key={stat.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <p className="text-zinc-500 text-sm">{stat.label}</p>
-          <p className={`text-2xl font-black mt-1 ${stat.color}`}>{stat.value}</p>
-        </div>
-      ))}
-    </div>
-
-    {/* Tabla pedidos */}
-    {cargandoPedidos ? (
-      <p className="text-zinc-500 text-center py-12 animate-pulse">Cargando pedidos...</p>
-    ) : pedidos.length === 0 ? (
-      <div className="text-center py-12">
-        <ShoppingBag size={48} className="text-zinc-700 mx-auto mb-4" />
-        <p className="text-zinc-500">No hay pedidos aún</p>
-      </div>
-    ) : (
-      <div className="flex flex-col gap-4">
-        {pedidos.map((pedido) => (
-          <div
-            key={pedido.id}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-4"
-          >
-            {/* Header pedido */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-white font-bold">#{pedido.id} - {pedido.nombre}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                    pedido.estado === "pagado"
-                      ? "bg-green-400/20 text-green-400"
-                      : pedido.estado === "rechazado"
-                      ? "bg-red-400/20 text-red-400"
-                      : "bg-yellow-400/20 text-yellow-400"
-                  }`}>
-                    {pedido.estado}
-                  </span>
-                </div>
-                <p className="text-zinc-500 text-sm mt-1">{pedido.email} · {pedido.telefono}</p>
-                <p className="text-zinc-500 text-sm">{pedido.direccion}, {pedido.ciudad}, {pedido.departamento}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-green-400 font-black text-xl">${pedido.total?.toLocaleString()}</p>
-                <p className="text-zinc-500 text-xs mt-1">
-                  {new Date(pedido.created_at).toLocaleDateString("es-CO", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
+        {vista === "pedidos" && (
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-black text-white">Pedidos</h2>
+              <button
+                onClick={cargarPedidos}
+                className="bg-zinc-800 text-zinc-300 px-4 py-2 rounded-xl text-sm hover:bg-zinc-700 transition flex items-center gap-2"
+              >
+                <RotateCcw size={14} />
+                Actualizar
+              </button>
             </div>
 
-            {/* Productos */}
-            <div className="border-t border-zinc-800 pt-3">
-              <p className="text-zinc-500 text-xs mb-2 uppercase tracking-widest font-mono">Productos</p>
-              <div className="flex flex-col gap-2">
-                {pedido.items?.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <img
-                      src={item.imagen}
-                      alt={item.nombre}
-                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-zinc-300 text-sm truncate">{item.nombre}</p>
-                      <p className="text-zinc-500 text-xs">x{item.cantidad}</p>
+            {/* Stats rápidos */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                {
+                  label: "Total pedidos",
+                  value: pedidos.length,
+                  color: "text-blue-400",
+                },
+                {
+                  label: "Pagados",
+                  value: pedidos.filter(p => p.estado === "pagado").length,
+                  color: "text-green-400",
+                },
+                {
+                  label: "Pendientes",
+                  value: pedidos.filter(p => p.estado === "pendiente").length,
+                  color: "text-yellow-400",
+                },
+                {
+                  label: "Total ventas",
+                  value: `$${pedidos.filter(p => p.estado === "pagado").reduce((acc, p) => acc + p.total, 0).toLocaleString()}`,
+                  color: "text-green-400",
+                },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                  <p className="text-zinc-500 text-sm">{stat.label}</p>
+                  <p className={`text-2xl font-black mt-1 ${stat.color}`}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabla pedidos */}
+            {cargandoPedidos ? (
+              <p className="text-zinc-500 text-center py-12 animate-pulse">Cargando pedidos...</p>
+            ) : pedidos.length === 0 ? (
+              <div className="text-center py-12">
+                <ShoppingBag size={48} className="text-zinc-700 mx-auto mb-4" />
+                <p className="text-zinc-500">No hay pedidos aún</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {pedidos.map((pedido) => (
+                  <div
+                    key={pedido.id}
+                    className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-4"
+                  >
+                    {/* Header pedido */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-bold">#{pedido.id} - {pedido.nombre}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                            pedido.estado === "pagado"
+                              ? "bg-green-400/20 text-green-400"
+                              : pedido.estado === "rechazado"
+                              ? "bg-red-400/20 text-red-400"
+                              : "bg-yellow-400/20 text-yellow-400"
+                          }`}>
+                            {pedido.estado}
+                          </span>
+                        </div>
+                        <p className="text-zinc-500 text-sm mt-1">{pedido.email} · {pedido.telefono}</p>
+                        <p className="text-zinc-500 text-sm">{pedido.direccion}, {pedido.ciudad}, {pedido.departamento}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-green-400 font-black text-xl">${pedido.total?.toLocaleString()}</p>
+                        <p className="text-zinc-500 text-xs mt-1">
+                          {new Date(pedido.created_at).toLocaleDateString("es-CO", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-zinc-300 text-sm font-bold flex-shrink-0">
-                      ${(item.precio * item.cantidad).toLocaleString()}
-                    </p>
+
+                    {/* Productos */}
+                    <div className="border-t border-zinc-800 pt-3">
+                      <p className="text-zinc-500 text-xs mb-2 uppercase tracking-widest font-mono">Productos</p>
+                      <div className="flex flex-col gap-2">
+                        {pedido.items?.map((item, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <img
+                              src={item.imagen}
+                              alt={item.nombre}
+                              className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-zinc-300 text-sm truncate">{item.nombre}</p>
+                              <p className="text-zinc-500 text-xs">x{item.cantidad}</p>
+                            </div>
+                            <p className="text-zinc-300 text-sm font-bold flex-shrink-0">
+                              ${(item.precio * item.cantidad).toLocaleString()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-zinc-800 pt-3 flex items-center justify-between">
+                      <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+                        <span>Envío: <span className="text-zinc-300">{pedido.metodo_envio || "estándar"}</span></span>
+                        <span>Pago: <span className="text-zinc-300">{pedido.metodo_pago || "MercadoPago"}</span></span>
+                        {pedido.proveedor_envio && (
+                          <span>Mensajería: <span className="text-green-400 font-medium">{pedido.proveedor_envio}</span></span>
+                        )}
+                        {pedido.costo_envio && (
+                          <span>Costo envío: <span className="text-zinc-300">${pedido.costo_envio.toLocaleString()}</span></span>
+                        )}
+                      </div>
+                      <select
+                        value={pedido.estado}
+                        onChange={async (e) => {
+                          const nuevoEstado = e.target.value
+                          await supabase
+                            .from("pedidos")
+                            .update({ estado: nuevoEstado })
+                            .eq("id", pedido.id)
+                          cargarPedidos()
+                        }}
+                        className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-zinc-300 text-xs focus:outline-none focus:border-green-400 cursor-pointer"
+                      >
+                        <option value="pendiente">Pendiente</option>
+                        <option value="pagado">Pagado</option>
+                        <option value="enviado">Enviado</option>
+                        <option value="entregado">Entregado</option>
+                        <option value="rechazado">Rechazado</option>
+                      </select>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-zinc-800 pt-3 flex items-center justify-between">
-              <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
-                <span>Envío: <span className="text-zinc-300">{pedido.metodo_envio || "estándar"}</span></span>
-                <span>Pago: <span className="text-zinc-300">{pedido.metodo_pago || "MercadoPago"}</span></span>
-                {pedido.proveedor_envio && (
-                  <span>Mensajería: <span className="text-green-400 font-medium">{pedido.proveedor_envio}</span></span>
-                )}
-                {pedido.costo_envio && (
-                  <span>Costo envío: <span className="text-zinc-300">${pedido.costo_envio.toLocaleString()}</span></span>
-                )}
-              </div>
-              <select
-                value={pedido.estado}
-                onChange={async (e) => {
-                  const nuevoEstado = e.target.value
-                  await supabase
-                    .from("pedidos")
-                    .update({ estado: nuevoEstado })
-                    .eq("id", pedido.id)
-                  cargarPedidos()
-                }}
-                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-zinc-300 text-xs focus:outline-none focus:border-green-400 cursor-pointer"
-              >
-                <option value="pendiente">Pendiente</option>
-                <option value="pagado">Pagado</option>
-                <option value="enviado">Enviado</option>
-                <option value="entregado">Entregado</option>
-                <option value="rechazado">Rechazado</option>
-              </select>
-            </div>
+            )}
           </div>
-        ))}
-      </div>
-    )}
-  </div>
-)}
+        )}
       </main>
     </div>
   );
