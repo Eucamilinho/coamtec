@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar"
 import Inicializador from "./components/Inicializador"
 import ThemeProvider from "./components/ThemeProvider"
 import AnalyticsTracker from "./components/AnalyticsTracker"
+import BotonWhatsapp from "./components/BotonWhatsapp"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -171,6 +172,7 @@ export default function RootLayout({ children }) {
           {children}
           <SpeedInsights />
           <Analytics />
+        <BotonWhatsapp />
         </ThemeProvider>
       </body>
     </html>
