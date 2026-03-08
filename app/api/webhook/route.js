@@ -50,7 +50,7 @@ export async function POST(request) {
           paymentInfo.status === "cancelled" ? "cancelado" :
           "pendiente"
 
-        // Actualizar pedido en Supabase
+        // Actualizar pedido en Supabase usando external_reference
         const { data, error } = await supabase
           .from("pedidos")
           .update({
@@ -59,7 +59,7 @@ export async function POST(request) {
             estado,
             fecha_pagado: paymentInfo.status === "approved" ? new Date().toISOString() : null
           })
-          .or(`mp_payment_id.eq.${paymentInfo.preference_id},external_reference.eq.${paymentInfo.external_reference}`)
+          .eq("external_reference", paymentInfo.external_reference)
           .select()
 
         if (error) {

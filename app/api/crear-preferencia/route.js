@@ -1,5 +1,6 @@
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createClient } from "@supabase/supabase-js"
+import { nanoid } from "nanoid"
 
 const mp = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
@@ -10,9 +11,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-export async function POST(request) {
   try {
     const { items, formulario, subtotal, envio, total } = await request.json()
+    // Generar external_reference único para el pedido
+    const external_reference = nanoid();
     
     // Debug logs para identificar el problema
     console.log('=== DEBUGGING MERCADOPAGO ===')
@@ -85,6 +87,7 @@ export async function POST(request) {
           mode: "not_specified",
         },
         statement_descriptor: "COAMTEC", // Aparece en estado de cuenta
+        external_reference,
       },
     })
 
@@ -116,6 +119,7 @@ export async function POST(request) {
       total,
       items,
       mp_payment_id: response.id,
+      external_reference,
       estado: "pendiente",
     }])
 
