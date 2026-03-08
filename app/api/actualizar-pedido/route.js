@@ -20,14 +20,19 @@ export async function POST(request) {
       "pendiente"
 
     // Actualizar estado del pedido
-    const { data, error } = await supabase
+    // Permitir buscar por mp_payment_id o external_reference
+    let query = supabase
       .from("pedidos")
       .update({
         mp_status: status,
         estado,
-      })
-      .eq("mp_payment_id", preferenceId)
-      .select()
+      });
+    if (preferenceId.length === 21) { // nanoid (external_reference)
+      query = query.eq("external_reference", preferenceId);
+    } else {
+      query = query.eq("mp_payment_id", preferenceId);
+    }
+    const { data, error } = await query.select();
 
     if (error) throw error
 

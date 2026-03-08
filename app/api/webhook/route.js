@@ -39,71 +39,24 @@ export async function POST(request) {
     // Procesar solo notificaciones de tipo payment
     if (body.type === "payment" && body.data?.id) {
       const paymentId = body.data.id
-
       try {
         const payment = new Payment(mp)
         const paymentInfo = await payment.get({ id: paymentId })
 
-        const estado =
-          paymentInfo.status === "approved" ? "pagado" :
-          paymentInfo.status === "rejected" ? "rechazado" :
-          paymentInfo.status === "cancelled" ? "cancelado" :
-          "pendiente"
-
-        // Actualizar pedido en Supabase usando external_reference
-        const { data, error } = await supabase
-          .from("pedidos")
-          .update({
-            mp_payment_id: paymentInfo.id,
-            mp_status: paymentInfo.status,
-            estado,
-            fecha_pagado: paymentInfo.status === "approved" ? new Date().toISOString() : null
+        // Llamar a /api/actualizar-pedido para centralizar la lógica
+        const url = `${process.env.NEXT_PUBLIC_URL || "https://www.coamtec.com"}/api/actualizar-pedido`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            preferenceId: paymentInfo.external_reference,
+            status: paymentInfo.status
           })
-          .eq("external_reference", paymentInfo.external_reference)
-          .select()
-
-        if (error) {
-          console.error("Error actualizando Supabase:", error)
-        } else if (data && data.length > 0 && paymentInfo.status === "approved") {
-          // Si el pago fue aprobado, actualizar stock
-          const pedido = data[0]
-          if (pedido.items && Array.isArray(pedido.items)) {
-            console.log(`Actualizando stock para pedido pagado: ${pedido.id}`)
-            
-            for (const item of pedido.items) {
-              try {
-                // Obtener stock actual del producto
-                const { data: producto, error: prodError } = await supabase
-                  .from("productos")
-                  .select("stock, nombre")
-                  .eq("id", item.id)
-                  .single()
-
-                if (prodError) {
-                  console.error(`Error obteniendo producto ${item.id}:`, prodError)
-                  continue
-                }
-
-                if (producto) {
-                  const nuevoStock = Math.max(0, producto.stock - item.cantidad)
-                  const { error: updateError } = await supabase
-                    .from("productos")
-                    .update({ stock: nuevoStock })
-                    .eq("id", item.id)
-                  
-                  if (updateError) {
-                    console.error(`Error actualizando stock del producto ${item.id}:`, updateError)
-                  } else {
-                    console.log(`✅ Stock actualizado: ${producto.nombre} - ${producto.stock} → ${nuevoStock}`)
-                  }
-                }
-              } catch (stockError) {
-                console.error(`Error procesando stock del producto ${item.id}:`, stockError)
-              }
-            }
-          }
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          console.error("Error en actualizar-pedido:", result);
         }
-
       } catch (paymentError) {
         console.error("Payment error:", paymentError)
       }
