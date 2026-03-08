@@ -11,6 +11,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
+export async function POST(request) {
   try {
     const { items, formulario, subtotal, envio, total } = await request.json()
     // Generar external_reference único para el pedido
@@ -138,6 +139,6 @@ const supabase = createClient(
     return Response.json({ 
       error: error.message,
       details: error.response?.data || 'No additional details'
-    }, { status: 500 })
+    }, { status: 500 });
   }
 }
