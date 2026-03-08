@@ -16,17 +16,11 @@ function ResultadoContenido() {
 
 
   useEffect(() => {
-  if (preferenceId && (status === "approved" || status === "success")) {
-    fetch("/api/actualizar-pedido", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ preferenceId, status: "approved" }),
-    })
-    .then(r => r.json())
-    .then(data => console.log("Respuesta actualizar:", data))
-    vaciarCarrito()
-  }
-}, [status, preferenceId])
+    // Solo vaciar el carrito si el pago fue aprobado y hay preferenceId
+    if (preferenceId && (status === "approved" || status === "success")) {
+      vaciarCarrito()
+    }
+  }, [status, preferenceId])
 
   useEffect(() => {
     // Ver todos los parámetros que llegan
