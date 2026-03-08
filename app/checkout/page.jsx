@@ -547,12 +547,23 @@ export default function Checkout() {
           items,
           estado: 'pagado' // Contraentrega se considera pagado inmediatamente
         };
-        
+
         const { error } = await supabase
           .from('pedidos')
           .insert([pedidoData]);
-        
+
         if (error) throw error;
+
+        // Notificación por correo y Telegram para contraentrega
+        try {
+          await fetch('/api/contraentrega-notificacion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pedido: pedidoData })
+          });
+        } catch (notifError) {
+          console.error('Error enviando notificaciones contraentrega:', notifError);
+        }
 
         // Actualizar stock para contraentrega
         try {
@@ -561,10 +572,8 @@ export default function Checkout() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ items })
           });
-          
           const stockResult = await stockResponse.json();
           console.log('Resultado actualización stock:', stockResult);
-          
           if (!stockResult.success) {
             console.warn('Algunos productos no pudieron actualizar stock:', stockResult.errores);
           }
@@ -572,7 +581,7 @@ export default function Checkout() {
           console.error('Error actualizando stock:', stockError);
           // No fallar el pedido si hay error de stock
         }
-        
+
         vaciarCarrito();
         router.push("/checkout/resultado?status=contraentrega");
         return;
