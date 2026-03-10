@@ -4,6 +4,9 @@ import { getIdFromSlug, validateSlug, createSlug } from "../../lib/slugs";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+// ✅ URL base centralizada
+const BASE_URL = "https://www.coamtec.com";
+
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const id = getIdFromSlug(resolvedParams.slug);
@@ -28,7 +31,6 @@ export async function generateMetadata({ params }) {
     return { title: "Producto no encontrado | Coam Tec" };
   }
 
-  // Verificar que el slug sea correcto, si no redirigir
   if (!validateSlug(resolvedParams.slug, producto.nombre, id)) {
     const correctSlug = createSlug(producto.nombre, id);
     redirect(`/productos/${correctSlug}`);
@@ -39,6 +41,9 @@ export async function generateMetadata({ params }) {
     ? producto.descripcion.replace(/<[^>]*>/g, '').slice(0, 160) 
     : `Compra ${producto.nombre} en Coam Tec. Envío a toda Colombia.`;
   
+  // ✅ URL canónica con www
+  const canonicalUrl = `${BASE_URL}/productos/${resolvedParams.slug}`;
+
   return {
     title: titulo,
     description: descripcion,
@@ -52,7 +57,7 @@ export async function generateMetadata({ params }) {
         height: 600,
         alt: producto.nombre,
       }],
-      url: `https://coamtec.com/productos/${resolvedParams.slug}`,
+      url: canonicalUrl,
     },
     twitter: {
       card: 'summary_large_image',
@@ -61,7 +66,7 @@ export async function generateMetadata({ params }) {
       images: [producto.imagen],
     },
     alternates: {
-      canonical: `https://coamtec.com/productos/${resolvedParams.slug}`,
+      canonical: canonicalUrl, // ✅ con www
     },
   };
 }
@@ -124,16 +129,17 @@ export default async function DetallePage({ params }) {
     );
   }
 
-  // Verificar slug correcto y redirigir si es necesario
   if (!validateSlug(resolvedParams.slug, producto.nombre, id)) {
     const correctSlug = createSlug(producto.nombre, id);
     redirect(`/productos/${correctSlug}`);
   }
 
-  // Schema mejorado para SEO
   const precioFinal = producto.descuento > 0 
     ? producto.precio - (producto.precio * producto.descuento / 100) 
     : producto.precio;
+
+  // ✅ URL canónica con www
+  const canonicalUrl = `${BASE_URL}/productos/${resolvedParams.slug}`;
 
   const productoSchema = {
     "@context": "https://schema.org/",
@@ -190,7 +196,7 @@ export default async function DetallePage({ params }) {
       availability: producto.stock > 0 
         ? "https://schema.org/InStock" 
         : "https://schema.org/OutOfStock",
-      url: `https://coamtec.com/productos/${resolvedParams.slug}`,
+      url: canonicalUrl, // ✅ con www
       seller: {
         "@type": "Organization",
         name: "Coam Tec"
@@ -218,14 +224,14 @@ export default async function DetallePage({ params }) {
           "@type": "ShippingDeliveryTime",
           handlingTime: {
             "@type": "QuantitativeValue",
-            minValue: 0,
-            maxValue: 1,
+            minValue: 1, // ✅ corregido de 0 a 1
+            maxValue: 2, // ✅ corregido de 1 a 2
             unitCode: "DAY"
           },
           transitTime: {
             "@type": "QuantitativeValue",
-            minValue: 1,
-            maxValue: 5,
+            minValue: 3, // ✅ corregido de 1 a 3
+            maxValue: 7, // ✅ corregido de 5 a 7
             unitCode: "DAY"
           }
         }
