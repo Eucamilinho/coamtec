@@ -142,6 +142,7 @@ export async function syncProductToMerchant(producto) {
         },
       }],
     }
+    
     const response = await fetch(
       `https://shoppingcontent.googleapis.com/content/v2.1/${MERCHANT_ID}/products`,
       {
