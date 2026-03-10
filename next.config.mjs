@@ -4,6 +4,18 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@react-three/fiber', '@react-three/drei', 'three'],
   },
+
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'coamtec.com' }],
+        destination: 'https://www.coamtec.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
+  
   async headers() {
     return [
       {

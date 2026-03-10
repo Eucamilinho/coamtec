@@ -7,6 +7,6 @@ export default function robots() {
         disallow: ["/api/", "/admin/", "/checkout/resultado/"],
       },
     ],
-    sitemap: "https://coamtec.com/sitemap.xml",
+    sitemap: "https://www.coamtec.com/sitemap.xml",
   };
 }

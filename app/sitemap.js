@@ -2,9 +2,8 @@ import { supabase } from "./lib/supabase";
 import { createSlug } from "./lib/slugs";
 
 export default async function sitemap() {
-  const baseUrl = "https://coamtec.com";
+  const baseUrl = "https://www.coamtec.com";
 
-  // Páginas estáticas
   const staticPages = [
     {
       url: baseUrl,
@@ -24,27 +23,8 @@ export default async function sitemap() {
       changeFrequency: "monthly",
       priority: 0.8,
     },
-    {
-      url: `${baseUrl}/favoritos`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/carrito`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/checkout`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.5,
-    },
   ];
 
-  // Productos dinámicos
   let productPages = [];
   try {
     const { data: productos, error } = await supabase
