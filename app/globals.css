@@ -1,0 +1,247 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TEMA ESTILO iOS/APPLE - Limpio y Minimalista
+═══════════════════════════════════════════════════════════════════════ */
+
+/* Tipografía estilo iPhone (San Francisco) */
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", 
+    "Helvetica Neue", "Arial", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Light mode */
+html.light {
+  background-color: #f5f5f7;
+}
+
+:root {
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+}
+
+/* Dark mode - Estilo iOS limpio */
+html.dark {
+  background-color: #000000;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --surface-1: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --line: #38383a;
+  --line-strong: #48484a;
+  --muted: #8e8e93;
+  --primary: #34c759;
+  --primary-strong: #30d158;
+  --secondary: #0a84ff;
+  --success: #32d74b;
+  --danger: #ff453a;
+  --glow-primary: 0 0 0 1px rgba(52, 199, 89, 0.3), 0 0 20px rgba(52, 199, 89, 0.15);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Animación de entrada */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+  animation: fadeIn 0.3s ease-out;
+  font-family: var(--font-family);
+  letter-spacing: -0.01em;
+}
+
+a {
+  transition: color 0.2s ease;
+}
+
+/* Marquee para banners */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .shimmer-bg {
+  background: linear-gradient(90deg, #1c1c1e 0%, #2c2c2e 50%, #1c1c1e 100%);
+  background-size: 200% 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DARK MODE - Utilidades mapeadas estilo iOS
+═══════════════════════════════════════════════════════════════════════ */
+
+.dark body {
+  background-color: #000000;
+  color: #f5f5f7;
+}
+
+.dark section:nth-of-type(even) {
+  background-color: rgba(28, 28, 30, 0.5);
+}
+
+/* Mapeo de clases dark a paleta iOS */
+.dark .dark\:bg-zinc-950 { background-color: #000000 !important; }
+.dark .dark\:bg-zinc-900,
+.dark .dark\:bg-zinc-900\/40,
+.dark .dark\:bg-zinc-900\/80 { background-color: var(--surface-1) !important; }
+.dark .dark\:bg-zinc-800,
+.dark .dark\:bg-zinc-800\/80 { background-color: var(--surface-2) !important; }
+.dark .dark\:border-zinc-800,
+.dark .dark\:border-zinc-700 { border-color: var(--line) !important; }
+.dark .dark\:text-white { color: #f5f5f7 !important; }
+.dark .dark\:text-zinc-300,
+.dark .dark\:text-zinc-200 { color: #e5e5e7 !important; }
+.dark .dark\:text-zinc-400 { color: var(--muted) !important; }
+.dark .dark\:text-zinc-500 { color: #98989d !important; }
+
+/* Placeholders */
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #636366 !important;
+  opacity: 1;
+}
+
+/* Botones y CTA */
+.dark .dark\:bg-green-400,
+.dark .dark\:bg-green-500 {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+/* Interactive states estilo iOS */
+.dark button,
+.dark a,
+.dark [role="button"] {
+  transition: all 0.2s ease;
+}
+
+.dark button:hover,
+.dark a:hover,
+.dark [role="button"]:hover {
+  opacity: 0.85;
+}
+
+.dark button:active,
+.dark a:active,
+.dark [role="button"]:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark input:focus-visible,
+.dark textarea:focus-visible,
+.dark select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.4);
+}
+
+/* Inputs estilo iOS */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: var(--surface-1) !important;
+  border-color: var(--line) !important;
+  color: #f5f5f7;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #636366;
+}
+
+/* Cards estilo iOS */
+.dark article,
+.dark .rounded-2xl,
+.dark .rounded-3xl {
+  box-shadow: var(--shadow-card);
+}
+
+.dark article:hover {
+  border-color: var(--line-strong) !important;
+}
+
+/* Scrollbar estilo iOS */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #8e8e93;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #636366;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3a3a3c;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #48484a;
+}
+
+/* Selección de texto estilo iOS */
+::selection {
+  background-color: rgba(52, 199, 89, 0.3);
+  color: inherit;
+}
+
+/* Mejoras para móvil */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Focus ring suave */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions globales */
+* {
+  transition-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+}

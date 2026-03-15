@@ -1,0 +1,1150 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { useCompraRapida } from "../../store/compraRapidaStore";
+import { supabase } from "../../lib/supabase";
+import Link from "next/link";
+import Image from "next/image";
+import {
+  Lock,
+  Truck,
+  Shield,
+  CreditCard,
+  Building2,
+  Wallet,
+  ArrowLeft,
+  Package,
+  Phone,
+  Mail,
+  MapPin,
+  CheckCircle,
+  AlertTriangle,
+  ChevronDown,
+  Search,
+  ChevronRight,
+  Zap
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+
+// Sistema de zonificación para envíos desde Bucaramanga
+const ZONAS_ENVIO = {
+  // Zona 1: Área metropolitana y Santander (local)
+  zona1: {
+    departamentos: ["Santander"],
+    ciudades: ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "Socorro", "San Gil"],
+    factor: 1.0,
+    tiempoBase: "1 día hábil"
+  },
+  // Zona 2: Departamentos vecinos
+  zona2: {
+    departamentos: ["Norte de Santander", "Boyacá", "Cesar"],
+    factor: 1.4,
+    tiempoBase: "1-2 días hábiles"
+  },
+  // Zona 3: Centro del país (principales ciudades)
+  zona3: {
+    departamentos: ["Cundinamarca", "Antioquia", "Caldas", "Risaralda", "Quindío", "Tolima", "Huila"],
+    factor: 1.8,
+    tiempoBase: "2-3 días hábiles"
+  },
+  // Zona 4: Costa Atlántica
+  zona4: {
+    departamentos: ["Atlántico", "Bolívar", "Magdalena", "La Guajira", "Córdoba", "Sucre"],
+    factor: 2.2,
+    tiempoBase: "2-4 días hábiles"
+  },
+  // Zona 5: Sur y occidente del país
+  zona5: {
+    departamentos: ["Valle del Cauca", "Cauca", "Nariño", "Meta", "Casanare"],
+    factor: 2.8,
+    tiempoBase: "3-5 días hábiles"
+  },
+  // Zona 6: Regiones apartadas
+  zona6: {
+    departamentos: ["Chocó", "Amazonas", "Caquetá", "Putumayo", "Arauca", "Guainía", "Guaviare", "Vaupés", "Vichada"],
+    factor: 4.0,
+    tiempoBase: "5-8 días hábiles"
+  }
+};
+
+// Función para determinar zona de envío
+const obtenerZonaEnvio = (departamento, ciudad) => {
+  // Primero verificar si es Bucaramanga mismo (zona especial)
+  if (departamento === "Santander" && ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"].includes(ciudad)) {
+    return { ...ZONAS_ENVIO.zona1, zona: "zona1", factor: 0.8 }; // Descuento local
+  }
+  
+  // Buscar en qué zona está el departamento
+  for (const [zonaKey, zonaData] of Object.entries(ZONAS_ENVIO)) {
+    if (zonaData.departamentos.includes(departamento)) {
+      return { ...zonaData, zona: zonaKey };
+    }
+  }
+  
+  // Por defecto, zona 6 (más cara) para departamentos no clasificados
+  return { ...ZONAS_ENVIO.zona6, zona: "zona6" };
+};
+
+// Simulación de APIs de empresas de mensajería con precios realistas
+const cotizarServientrega = async (origen, destino, departamento, peso, valorDeclarado) => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 8500; // Precio base más realista
+  const weightFactor = Math.ceil(peso / 1000) * 1800;
+  const zoneFactor = zonaDestino.factor;
+  const insuranceFactor = valorDeclarado > 200000 ? 1.15 : (valorDeclarado > 100000 ? 1.08 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
+  
+  return {
+    empresa: "Servientrega",
+    precio: Math.max(precio, 6500), // Mínimo $6.500
+    tiempoEntrega: zonaDestino.tiempoBase,
+    confiable: true,
+    zona: zonaDestino.zona
+  };
+};
+
+const cotizarEnvia = async (origen, destino, departamento, peso, valorDeclarado) => {
+  await new Promise(resolve => setTimeout(resolve, 600));
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 7200; // Envía suele ser más económico
+  const weightFactor = Math.ceil(peso / 1000) * 1600;
+  const zoneFactor = zonaDestino.factor;
+  const insuranceFactor = valorDeclarado > 200000 ? 1.12 : (valorDeclarado > 100000 ? 1.06 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
+  
+  return {
+    empresa: "Envía",
+    precio: Math.max(precio, 5800), // Mínimo $5.800
+    tiempoEntrega: zonaDestino.tiempoBase,
+    confiable: true,
+    zona: zonaDestino.zona
+  };
+};
+
+const cotizarInterrapidisimo = async (origen, destino, departamento, peso, valorDeclarado) => {
+  await new Promise(resolve => setTimeout(resolve, 700));
+  
+  const zonaDestino = obtenerZonaEnvio(departamento, destino);
+  const basePrice = 9800; // Más caro pero más rápido
+  const weightFactor = Math.ceil(peso / 1000) * 2000;
+  const zoneFactor = zonaDestino.factor * 0.85; // Descuento por velocidad
+  const insuranceFactor = valorDeclarado > 200000 ? 1.18 : (valorDeclarado > 100000 ? 1.10 : 1);
+  
+  const precio = Math.round((basePrice * zoneFactor + weightFactor) * insuranceFactor);
+  
+  // Ajustar tiempo de entrega (más rápido)
+  let tiempoAjustado = zonaDestino.tiempoBase;
+  if (zonaDestino.zona === "zona2" || zonaDestino.zona === "zona3") {
+    tiempoAjustado = "1-2 días hábiles";
+  } else if (zonaDestino.zona === "zona4" || zonaDestino.zona === "zona5") {
+    tiempoAjustado = "2-3 días hábiles";
+  }
+  
+  return {
+    empresa: "Interrapidísimo",
+    precio: Math.max(precio, 7500), // Mínimo $7.500
+    tiempoEntrega: tiempoAjustado,
+    confiable: true,
+    zona: zonaDestino.zona
+  };
+};
+
+// Componente SearchableSelect con estilo iOS
+function SearchableSelect({ options, value, onChange, placeholder, disabled, error, label }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filteredOptions, setFilteredOptions] = useState(options);
+  const containerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const filtered = options.filter(option =>
+      option.toLowerCase().includes(search.toLowerCase())
+    );
+    setFilteredOptions(filtered);
+  }, [search, options]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (option) => {
+    onChange({ target: { name: label.toLowerCase(), value: option } });
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  const displayValue = value || placeholder;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen(!isOpen);
+            setTimeout(() => inputRef.current?.focus(), 100);
+          }
+        }}
+        className={`w-full px-4 py-3.5 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white cursor-pointer transition-all duration-200 flex items-center justify-between ${
+          disabled 
+            ? 'opacity-50 cursor-not-allowed' 
+            : 'hover:border-zinc-400 dark:hover:border-zinc-600 focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:ring-2 focus-within:ring-zinc-900/10 dark:focus-within:ring-white/10'
+        } ${
+          error ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-700'
+        }`}
+      >
+        {isOpen ? (
+          <div className="flex items-center gap-2 flex-1">
+            <Search size={16} className="text-zinc-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Buscar ${label.toLowerCase()}...`}
+              className="flex-1 outline-none bg-transparent text-zinc-900 dark:text-white placeholder-zinc-400"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        ) : (
+          <span className={value ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}>
+            {displayValue}
+          </span>
+        )}
+        <ChevronDown 
+          size={16} 
+          className={`text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <div
+                key={option}
+                onClick={() => handleSelect(option)}
+                className={`px-4 py-3 cursor-pointer transition-all duration-150 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 first:rounded-t-2xl last:rounded-b-2xl ${
+                  value === option ? 'bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-white font-medium' : 'text-zinc-700 dark:text-zinc-300'
+                }`}
+              >
+                {option}
+              </div>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-zinc-400 text-center">
+              No se encontraron resultados
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Ciudades donde está disponible contraentrega
+const CIUDADES_CONTRAENTREGA = ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"];
+
+// Datos de departamentos y ciudades de Colombia
+const DEPARTAMENTOS_CIUDADES = {
+  "Santander": ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "Socorro", "San Gil"],
+  "Cundinamarca": ["Bogotá", "Soacha", "Facatativá", "Chía", "Zipaquirá", "Fusagasugá", "Girardot"],
+  "Antioquia": ["Medellín", "Bello", "Itagüí", "Envigado", "Sabaneta", "Apartadó", "Turbo"],
+  "Valle del Cauca": ["Cali", "Palmira", "Tuluá", "Cartago", "Buga", "Jamundí", "Yumbo"],
+  "Atlántico": ["Barranquilla", "Soledad", "Malambo", "Sabanalarga", "Puerto Colombia"],
+  "Bolívar": ["Cartagena", "Magangué", "Turbaco", "Arjona", "El Carmen de Bolívar"],
+  "Norte de Santander": ["Cúcuta", "Villa del Rosario", "Los Patios", "Pamplona", "Ocaña"],
+  "Córdoba": ["Montería", "Lorica", "Cereté", "Sahagún", "Planeta Rica"],
+  "Sucre": ["Sincelejo", "Corozal", "Sampués", "San Marcos", "Tolú"],
+  "Magdalena": ["Santa Marta", "Ciénaga", "Fundación", "Zona Bananera", "Aracataca"],
+  "La Guajira": ["Riohacha", "Maicao", "Valledupar", "Fonseca", "San Juan del Cesar"],
+  "Cesar": ["Valledupar", "Aguachica", "Bosconia", "Codazzi", "La Jagua de Ibirico"],
+  "Huila": ["Neiva", "Pitalito", "Garzón", "La Plata", "Campoalegre"],
+  "Tolima": ["Ibagué", "Espinal", "Melgar", "Honda", "Chaparral"],
+  "Risaralda": ["Pereira", "Dosquebradas", "Santa Rosa de Cabal", "La Virginia"],
+  "Caldas": ["Manizales", "Villamaría", "Chinchiná", "La Dorada", "Riosucio"],
+  "Quindío": ["Armenia", "Calarcá", "La Tebaida", "Montenegro", "Quimbaya"],
+  "Meta": ["Villavicencio", "Acacías", "Granada", "San Martín", "Puerto López"],
+  "Casanare": ["Yopal", "Aguazul", "Villanueva", "Monterrey", "Tauramena"],
+  "Boyacá": ["Tunja", "Duitama", "Sogamoso", "Chiquinquirá", "Paipa"],
+  "Nariño": ["Pasto", "Tumaco", "Ipiales", "Túquerres", "Samaniego"],
+  "Cauca": ["Popayán", "Santander de Quilichao", "Puerto Tejada", "Patía"],
+  "Caquetá": ["Florencia", "San Vicente del Caguán", "La Montañita", "Curillo"],
+  "Putumayo": ["Mocoa", "Puerto Asís", "Orito", "Valle del Guamuez"],
+  "Amazonas": ["Leticia", "Puerto Nariño", "La Chorrera"],
+  "Arauca": ["Arauca", "Saravena", "Tame", "Fortul"],
+  "Chocó": ["Quibdó", "Istmina", "Condoto", "Acandí"],
+  "Guainía": ["Inírida", "Barranco Minas"],
+  "Guaviare": ["San José del Guaviare", "Calamar"],
+  "Vaupés": ["Mitú", "Carurú"],
+  "Vichada": ["Puerto Carreño", "La Primavera"]
+};
+
+export default function CheckoutRapido() {
+  const { items, limpiar, actualizarCantidad } = useCompraRapida();
+  const [formulario, setFormulario] = useState({
+    nombre: "",
+    email: "",
+    telefono: "",
+    departamento: "",
+    ciudad: "",
+    direccion: "",
+    referencia: "",
+    metodoPago: "contraentrega",
+  });
+
+  const [cargando, setCargando] = useState(false);
+  const [errores, setErrores] = useState({});
+  const [ciudadesDisponibles, setCiudadesDisponibles] = useState([]);
+  const [opcionesEnvio, setOpcionesEnvio] = useState([]);
+  const [cotizandoEnvio, setCotizandoEnvio] = useState(false);
+  const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
+  const router = useRouter();
+
+  // Refs para scroll automático al campo con error
+  const campoRefs = {
+    nombre: useRef(null),
+    email: useRef(null),
+    telefono: useRef(null),
+    departamento: useRef(null),
+    ciudad: useRef(null),
+    direccion: useRef(null),
+  };
+
+  // Función para calcular peso total del pedido
+  const calcularPesoTotal = (items) => {
+    return items.reduce((total, item) => {
+      // Usar peso real del producto si está disponible, sino usar estimado
+      const pesoProducto = item.peso && item.peso > 0 ? parseInt(item.peso) : 500; // 500g por defecto
+      return total + (pesoProducto * item.cantidad);
+    }, 0);
+  };
+
+  const subtotal = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+  // Envío gratis solo para compras >= $500.000
+  const envio = envioSeleccionado ? (subtotal >= 500000 ? 0 : envioSeleccionado.precio) : (subtotal >= 500000 ? 0 : 15000);
+  const total = subtotal + envio;
+  
+  // Verificar si contraentrega está disponible para la ciudad seleccionada
+  const contraentregaDisponible = CIUDADES_CONTRAENTREGA.includes(formulario.ciudad);
+  
+  // Función para cotizar envío con todas las empresas
+  const cotizarEnvios = async (ciudad, departamento) => {
+    if (!ciudad || !departamento) return;
+    
+    setCotizandoEnvio(true);
+    setOpcionesEnvio([]);
+    setEnvioSeleccionado(null);
+    
+    try {
+      const pesoTotal = calcularPesoTotal(items);
+      const valorDeclarado = subtotal;
+      const origen = "Bucaramanga"; // Ciudad origen de la tienda
+      const destino = ciudad;
+      
+      // Cotizar con todas las empresas en paralelo
+      const [servientrega, envia, interrapidisimo] = await Promise.all([
+        cotizarServientrega(origen, destino, departamento, pesoTotal, valorDeclarado),
+        cotizarEnvia(origen, destino, departamento, pesoTotal, valorDeclarado),
+        cotizarInterrapidisimo(origen, destino, departamento, pesoTotal, valorDeclarado)
+      ]);
+      
+      const opciones = [servientrega, envia, interrapidisimo]
+        .filter(opcion => opcion.confiable)
+        .sort((a, b) => a.precio - b.precio); // Ordenar por precio
+      
+      setOpcionesEnvio(opciones);
+      
+      // Auto-seleccionar la opción más económica si hay opciones disponibles
+      if (opciones.length > 0) {
+        setEnvioSeleccionado(opciones[0]);
+      }
+      
+    } catch (error) {
+      console.error('Error cotizando envíos:', error);
+      // Fallback a precio fijo si falla la cotización
+      const fallback = {
+        empresa: "Envío estándar",
+        precio: subtotal >= 150000 ? 0 : 15000,
+        tiempoEntrega: "3-5 días hábiles",
+        confiable: true
+      };
+      setOpcionesEnvio([fallback]);
+      setEnvioSeleccionado(fallback);
+    } finally {
+      setCotizandoEnvio(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Si se cambia el departamento, actualizar las ciudades y limpiar la ciudad seleccionada
+    if (name === "departamento") {
+      setCiudadesDisponibles(DEPARTAMENTOS_CIUDADES[value] || []);
+      setFormulario(prev => ({ ...prev, departamento: value, ciudad: "", metodoPago: "transferencia" }));
+    }
+    // Si se cambia la ciudad, verificar si contraentrega está disponible
+    else if (name === "ciudad") {
+      const contraentregaDisponible = CIUDADES_CONTRAENTREGA.includes(value);
+      setFormulario(prev => ({
+        ...prev,
+        ciudad: value,
+        metodoPago: !contraentregaDisponible && prev.metodoPago === "contraentrega" ? "transferencia" : prev.metodoPago
+      }));      
+      // Cotizar envío cuando se selecciona la ciudad
+      cotizarEnvios(value, formulario.departamento);
+    }
+    else {
+      setFormulario({ ...formulario, [name]: value });
+    }
+    
+    // Limpiar error del campo al empezar a escribir
+    if (errores[name]) {
+      setErrores({ ...errores, [name]: "" });
+    }
+  };
+
+  const validarFormulario = () => {
+    const nuevosErrores = {};
+    
+    if (!formulario.nombre.trim()) nuevosErrores.nombre = "Nombre requerido";
+    if (!formulario.email.trim()) nuevosErrores.email = "Email requerido";
+    if (!formulario.telefono.trim()) nuevosErrores.telefono = "Teléfono requerido";
+    if (!formulario.departamento.trim()) nuevosErrores.departamento = "Departamento requerido";
+    if (!formulario.ciudad.trim()) nuevosErrores.ciudad = "Ciudad requerida";
+    if (!formulario.direccion.trim()) nuevosErrores.direccion = "Dirección requerida";
+    
+    // Validar email básico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formulario.email && !emailRegex.test(formulario.email)) {
+      nuevosErrores.email = "Email inválido";
+    }
+    
+    setErrores(nuevosErrores);
+    
+    // Scroll automático al primer campo con error
+    if (Object.keys(nuevosErrores).length > 0) {
+      const primerCampoConError = Object.keys(nuevosErrores)[0];
+      const ref = campoRefs[primerCampoConError];
+      if (ref?.current) {
+        ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Intentar enfocar el input si es posible
+        setTimeout(() => {
+          const input = ref.current.querySelector('input, textarea, select');
+          if (input && !input.disabled) input.focus();
+        }, 500);
+      }
+    }
+    
+    return Object.keys(nuevosErrores).length === 0;
+  };
+
+  const procesarPedido = async () => {
+    if (!validarFormulario()) return;
+    
+    setCargando(true);
+    
+    try {
+      // Validar stock actual antes de proceder
+      console.log("Validando stock antes del pago...");
+      const stockErrors = [];
+      
+      for (const item of items) {
+        const { data: producto, error } = await supabase
+          .from('productos')
+          .select('stock, nombre')
+          .eq('id', item.id)
+          .single();
+          
+        if (error) {
+          console.error('Error obteniendo producto:', error);
+          continue;
+        }
+        
+        if (!producto) {
+          stockErrors.push(`Producto "${item.nombre}" no encontrado`);
+          continue;
+        }
+        
+        if (producto.stock < item.cantidad) {
+          stockErrors.push({
+            id: item.id,
+            nombre: producto.nombre,
+            disponible: producto.stock,
+            solicitado: item.cantidad
+          });
+        }
+      }
+      
+      // Si hay errores de stock, mostrar alerta con opciones
+      if (stockErrors.length > 0) {
+        const problemas = stockErrors.map(error => {
+          if (typeof error === 'string') return error;
+          return `${error.nombre}: quieres ${error.solicitado}, solo quedan ${error.disponible} disponibles`;
+        }).join('\n');
+        
+        const accion = confirm(
+          `⚠️ PROBLEMA DE STOCK:\n\n${problemas}\n\n` +
+          `¿Quieres ajustar automáticamente las cantidades a las disponibles?\n\n` +
+          `• OK: Ajustar cantidades automáticamente\n` +
+          `• Cancelar: Cancelar compra`
+        );
+        
+        if (accion) {
+          // Ajustar cantidades automáticamente
+          for (const error of stockErrors) {
+            if (typeof error === 'object') {
+              if (error.disponible > 0) {
+                actualizarCantidad(error.id, error.disponible);
+              }
+            }
+          }
+          
+          alert('✅ Cantidades ajustadas. Puedes proceder con el pago.');
+          setCargando(false);
+          return;
+        } else {
+          setCargando(false);
+          return;
+        }
+      }
+      
+      // Si es contraentrega, solo crear pedido y redirigir
+      if (formulario.metodoPago === 'contraentrega') {
+        const pedidoData = {
+          nombre: formulario.nombre,
+          email: formulario.email,
+          telefono: formulario.telefono,
+          departamento: formulario.departamento,
+          ciudad: formulario.ciudad,
+          direccion: formulario.direccion,
+          referencia: formulario.referencia,
+          metodo_pago: formulario.metodoPago,
+          proveedor_envio: envioSeleccionado ? envioSeleccionado.empresa : 'Envío estándar',
+          costo_envio: envio,
+          tiempo_entrega: envioSeleccionado ? envioSeleccionado.tiempoEntrega : '3-5 días hábiles',
+          zona_envio: envioSeleccionado ? envioSeleccionado.zona : 'zona3',
+          subtotal,
+          total,
+          items,
+          estado: 'pagado' // Contraentrega se considera pagado inmediatamente
+        };
+
+        const { error } = await supabase
+          .from('pedidos')
+          .insert([pedidoData]);
+
+        if (error) throw error;
+
+        // Notificación por correo y Telegram para contraentrega
+        try {
+          await fetch('/api/contraentrega-notificacion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pedido: pedidoData })
+          });
+        } catch (notifError) {
+          console.error('Error enviando notificaciones contraentrega:', notifError);
+        }
+
+        // Actualizar stock para contraentrega
+        try {
+          const stockResponse = await fetch('/api/actualizar-stock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items })
+          });
+          const stockResult = await stockResponse.json();
+          console.log('Resultado actualización stock:', stockResult);
+          if (!stockResult.success) {
+            console.warn('Algunos productos no pudieron actualizar stock:', stockResult.errores);
+          }
+        } catch (stockError) {
+          console.error('Error actualizando stock:', stockError);
+          // No fallar el pedido si hay error de stock
+        }
+
+        limpiar();
+        router.push("/checkout/resultado?status=contraentrega");
+        return;
+      }
+      
+      // Para tarjetas y PSE, usar MercadoPago
+      const response = await fetch('/api/crear-preferencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items,
+          formulario: {
+            ...formulario,
+            envioSeleccionado
+          },
+          subtotal,
+          envio,
+          total
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al crear la preferencia de pago');
+      }
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        // Redirigir a MercadoPago
+        window.location.href = data.url;
+      } else {
+        throw new Error('No se recibió URL de pago');
+      }
+      
+    } catch (error) {
+      console.error("Error procesando pedido:", error);
+      alert("Error al procesar el pedido: " + error.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-zinc-950 pt-20">
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+            <Zap size={32} className="text-zinc-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">
+            No hay productos seleccionados
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-sm mx-auto">
+            Selecciona un producto para continuar con la compra rápida
+          </p>
+          <Link 
+            href="/productos"
+            className="inline-flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold px-8 py-3.5 rounded-full transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+          >
+            Ver productos
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-zinc-950 pt-20 pb-16">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header iOS Style */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link 
+            href="/productos"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-white transition-all duration-200 active:scale-[0.95]"
+          >
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 mb-1 text-sm text-zinc-400">
+              <Link href="/productos" className="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                Productos
+              </Link>
+              <ChevronRight size={14} />
+              <span className="text-zinc-600 dark:text-zinc-300 font-medium">Compra rápida</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
+              Compra rápida
+              <Zap size={24} className="text-zinc-400" />
+            </h1>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Completa tu información para procesar el envío
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Formulario */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Información personal */}
+            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center">
+                  <Phone size={16} className="text-white dark:text-zinc-900" />
+                </div>
+                Información de contacto
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div ref={campoRefs.nombre}>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Nombre completo *
+                  </label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={formulario.nombre}
+                    onChange={handleChange}
+                    placeholder="Tu nombre completo"
+                    className={`w-full px-4 py-3.5 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200 ${
+                      errores.nombre ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.nombre && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      {errores.nombre}
+                    </p>
+                  )}
+                </div>
+                
+                <div ref={campoRefs.email}>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formulario.email}
+                    onChange={handleChange}
+                    placeholder="tu@email.com"
+                    className={`w-full px-4 py-3.5 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200 ${
+                      errores.email ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.email && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      {errores.email}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2" ref={campoRefs.telefono}>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Teléfono / WhatsApp *
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={formulario.telefono}
+                    onChange={handleChange}
+                    placeholder="3001234567"
+                    className={`w-full px-4 py-3.5 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200 ${
+                      errores.telefono ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.telefono && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      {errores.telefono}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Dirección de envío */}
+            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center">
+                  <MapPin size={16} className="text-white dark:text-zinc-900" />
+                </div>
+                Dirección de envío
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div ref={campoRefs.departamento}>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Departamento *
+                  </label>
+                  <SearchableSelect
+                    label="Departamento"
+                    options={Object.keys(DEPARTAMENTOS_CIUDADES)}
+                    value={formulario.departamento}
+                    onChange={handleChange}
+                    placeholder="Selecciona un departamento"
+                    error={errores.departamento}
+                  />
+                  {errores.departamento && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      {errores.departamento}
+                    </p>
+                  )}
+                </div>
+                
+                <div ref={campoRefs.ciudad}>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Ciudad *
+                  </label>
+                  <SearchableSelect
+                    label="Ciudad"
+                    options={ciudadesDisponibles}
+                    value={formulario.ciudad}
+                    onChange={handleChange}
+                    placeholder={formulario.departamento ? "Selecciona una ciudad" : "Primero selecciona un departamento"}
+                    disabled={!formulario.departamento}
+                    error={errores.ciudad}
+                  />
+                  {errores.ciudad && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      {errores.ciudad}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2" ref={campoRefs.direccion}>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Dirección completa *
+                  </label>
+                  <input
+                    type="text"
+                    name="direccion"
+                    value={formulario.direccion}
+                    onChange={handleChange}
+                    placeholder="Calle 45 # 32-15, Apartamento 301"
+                    className={`w-full px-4 py-3.5 border rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200 ${
+                      errores.direccion ? 'border-red-400' : 'border-zinc-200 dark:border-zinc-700'
+                    }`}
+                  />
+                  {errores.direccion && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      {errores.direccion}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Referencia o indicaciones adicionales
+                  </label>
+                  <textarea
+                    name="referencia"
+                    value={formulario.referencia}
+                    onChange={handleChange}
+                    placeholder="Ej: Casa blanca con portón verde, timbre amarillo"
+                    rows={3}
+                    className="w-full px-4 py-3.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200 resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Opciones de envío */}
+            {formulario.ciudad && (
+              <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6">
+                <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-5 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center">
+                    <Truck size={16} className="text-white dark:text-zinc-900" />
+                  </div>
+                  Opciones de envío
+                </h2>
+                
+                {cotizandoEnvio ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 text-zinc-500 dark:text-zinc-400 text-center">
+                      <div className="w-6 h-6 border-2 border-zinc-300 dark:border-zinc-600 border-t-zinc-900 dark:border-t-white rounded-full animate-spin flex-shrink-0"></div>
+                      <span className="text-sm">Cotizando con Servientrega, Envía e Interrapidísimo...</span>
+                    </div>
+                  </div>
+                ) : opcionesEnvio.length > 0 ? (
+                  <div className="space-y-3">
+                    {opcionesEnvio.map((opcion, index) => (
+                      <label
+                        key={index}
+                        className={`flex items-start sm:items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.99] ${
+                          envioSeleccionado?.empresa === opcion.empresa
+                            ? "border-zinc-900 dark:border-white bg-white dark:bg-zinc-800"
+                            : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-800/50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="envio"
+                          checked={envioSeleccionado?.empresa === opcion.empresa}
+                          onChange={() => setEnvioSeleccionado(opcion)}
+                          className="w-5 h-5 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 focus:ring-zinc-900 dark:focus:ring-white mt-0.5 sm:mt-0 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-zinc-900 dark:text-white">
+                              {opcion.empresa}
+                            </p>
+                            {index === 0 && (
+                              <span className="text-xs bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-2.5 py-1 rounded-full font-medium">
+                                Mejor precio
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            Entrega: {opcion.tiempoEntrega}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-lg text-zinc-900 dark:text-white">
+                            {`$${opcion.precio.toLocaleString()}`}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                    
+                    <div className="mt-4 p-4 bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-zinc-500 dark:text-zinc-400">
+                        <div>
+                          <p><span className="font-medium text-zinc-700 dark:text-zinc-300">Peso estimado:</span> {(calcularPesoTotal(items) / 1000).toFixed(1)} kg</p>
+                          <p><span className="font-medium text-zinc-700 dark:text-zinc-300">Valor declarado:</span> ${subtotal.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p><span className="font-medium text-zinc-700 dark:text-zinc-300">Origen:</span> Bucaramanga, Santander</p>
+                          <p><span className="font-medium text-zinc-700 dark:text-zinc-300">Destino:</span> {formulario.ciudad}, {formulario.departamento}</p>
+                        </div>
+                      </div>
+                      
+                      {envioSeleccionado?.zona && (
+                        <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-700">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${
+                              envioSeleccionado.zona === 'zona1' ? 'bg-emerald-500' :
+                              envioSeleccionado.zona === 'zona2' ? 'bg-blue-500' :
+                              envioSeleccionado.zona === 'zona3' ? 'bg-amber-500' :
+                              envioSeleccionado.zona === 'zona4' ? 'bg-orange-500' :
+                              envioSeleccionado.zona === 'zona5' ? 'bg-rose-500' :
+                              'bg-zinc-400'
+                            }`}></div>
+                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              {
+                                envioSeleccionado.zona === 'zona1' ? 'Zona Local' :
+                                envioSeleccionado.zona === 'zona2' ? 'Zona Regional' :
+                                envioSeleccionado.zona === 'zona3' ? 'Zona Nacional' :
+                                envioSeleccionado.zona === 'zona4' ? 'Zona Costa' :
+                                envioSeleccionado.zona === 'zona5' ? 'Zona Sur/Occidente' :
+                                'Zona Especial'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : formulario.ciudad ? (
+                  <div className="text-center py-10 text-zinc-400">
+                    <Truck size={40} className="mx-auto mb-3 opacity-50" />
+                    <p>No se pudieron cargar opciones de envío</p>
+                    <button
+                      onClick={() => cotizarEnvios(formulario.ciudad, formulario.departamento)}
+                      className="mt-3 text-zinc-900 dark:text-white font-medium hover:underline text-sm"
+                    >
+                      Intentar de nuevo
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            {/* Método de pago */}
+            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center">
+                  <CreditCard size={16} className="text-white dark:text-zinc-900" />
+                </div>
+                Método de pago
+              </h2>
+              
+              <div className="space-y-3">
+                {contraentregaDisponible ? (
+                  <label className={`flex items-start sm:items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.99] ${
+                    formulario.metodoPago === "contraentrega" 
+                      ? "border-zinc-900 dark:border-white bg-white dark:bg-zinc-800" 
+                      : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-800/50"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="metodoPago"
+                      value="contraentrega"
+                      checked={formulario.metodoPago === "contraentrega"}
+                      onChange={handleChange}
+                      className="w-5 h-5 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 focus:ring-zinc-900 dark:focus:ring-white mt-0.5 sm:mt-0 flex-shrink-0"
+                    />
+                    <Wallet size={20} className="text-zinc-600 dark:text-zinc-400 flex-shrink-0 hidden sm:block" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-zinc-900 dark:text-white">Contraentrega</p>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">Paga cuando recibas tu pedido</p>
+                    </div>
+                    <span className="text-xs bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-2.5 py-1 rounded-full font-medium flex-shrink-0">
+                      Recomendado
+                    </span>
+                  </label>
+                ) : (
+                  <div className="p-4 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl opacity-50 bg-white dark:bg-zinc-800/50">
+                    <div className="flex items-start sm:items-center gap-4">
+                      <input
+                        type="radio"
+                        disabled
+                        className="w-5 h-5 text-zinc-300 mt-0.5 sm:mt-0 flex-shrink-0"
+                      />
+                      <Wallet size={20} className="text-zinc-400 flex-shrink-0 hidden sm:block" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-zinc-400">Contraentrega</p>
+                        <p className="text-sm text-zinc-400">Solo disponible en Bucaramanga, Floridablanca, Girón y Piedecuesta</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <label className={`flex items-start sm:items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.99] ${
+                  formulario.metodoPago === "transferencia" 
+                    ? "border-zinc-900 dark:border-white bg-white dark:bg-zinc-800" 
+                    : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-800/50"
+                }`}>
+                  <input
+                    type="radio"
+                    name="metodoPago"
+                    value="transferencia"
+                    checked={formulario.metodoPago === "transferencia"}
+                    onChange={handleChange}
+                    className="w-5 h-5 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 focus:ring-zinc-900 dark:focus:ring-white mt-0.5 sm:mt-0 flex-shrink-0"
+                  />
+                  <Building2 size={20} className="text-zinc-600 dark:text-zinc-400 flex-shrink-0 hidden sm:block" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-zinc-900 dark:text-white">Transferencia bancaria</p>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Consigna o transferencia a nuestra cuenta</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Resumen del pedido */}
+          <div className="lg:col-span-1">
+            <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 lg:sticky lg:top-24">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-5">
+                Resumen del pedido
+              </h2>
+              
+              {/* Lista de productos */}
+              <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
+                {items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <div className="relative w-14 h-14 bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden flex-shrink-0">
+                      <Image
+                        src={item.imagen}
+                        alt={item.nombre}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">
+                        {item.nombre}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Cantidad: {item.cantidad}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+                      ${(item.precio * item.cantidad).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Totales */}
+              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    Subtotal ({items.reduce((acc, i) => acc + i.cantidad, 0)} productos)
+                  </span>
+                  <span className="text-zinc-900 dark:text-white font-medium">
+                    ${subtotal.toLocaleString()}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500 dark:text-zinc-400">Envío</span>
+                  <div className="text-right">
+                    <span className={`font-medium ${envio === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'}`}>
+                      {envio === 0 ? 'Gratis' : `$${envio.toLocaleString()}`}
+                    </span>
+                    {envioSeleccionado && (
+                      <p className="text-xs text-zinc-400">
+                        {envioSeleccionado.empresa}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {subtotal >= 500000 && (
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-lg">
+                    <CheckCircle size={14} />
+                    ¡Envío gratis por compra mayor a $500.000!
+                  </div>
+                )}
+                
+                <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 flex justify-between font-bold">
+                  <span className="text-zinc-900 dark:text-white">Total</span>
+                  <span className="text-2xl text-zinc-900 dark:text-white">
+                    ${total.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Botón de confirmar pedido iOS Style */}
+              <button
+                onClick={procesarPedido}
+                disabled={cargando}
+                className={`w-full mt-6 h-14 rounded-full font-semibold text-white dark:text-zinc-900 transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] ${
+                  cargando
+                    ? 'bg-zinc-300 dark:bg-zinc-700 cursor-not-allowed'
+                    : 'bg-zinc-900 dark:bg-white hover:opacity-90'
+                }`}
+              >
+                {cargando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-zinc-500 dark:border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <Lock size={18} />
+                    Confirmar pedido
+                  </>
+                )}
+              </button>
+              
+              {/* Garantías */}
+              <div className="mt-6 pt-5 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+                <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Shield size={14} className="text-zinc-400" />
+                  <span>Compra 100% segura</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Truck size={14} className="text-zinc-400" />
+                  <span>Envío a toda Colombia</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Package size={14} className="text-zinc-400" />
+                  <span>Garantía en todos los productos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
