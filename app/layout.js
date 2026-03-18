@@ -1,11 +1,12 @@
+import dynamic from "next/dynamic"
+import Script from "next/script"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import Navbar from "./components/Navbar"
 import Inicializador from "./components/Inicializador"
 import ThemeProvider from "./components/ThemeProvider"
-import AnalyticsTracker from "./components/AnalyticsTracker"
-import BotonWhatsapp from "./components/BotonWhatsapp"
+import ClientHydrators from "./components/ClientHydrators"
 
 export const metadata = {
   metadataBase: new URL('https://coamtec.com'),
@@ -137,16 +138,12 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-        {/* Microsoft Clarity */}
-        <script
+        {/* Microsoft Clarity (deferred via next/script) */}
+        <Script
+          id="microsoft-clarity"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `
-              (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "vvup628y65");
-            `,
+            __html: `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "vvup628y65");`,
           }}
         />
         <link rel="preconnect" href="https://lraxahespfbnnelztrjg.supabase.co" />
@@ -156,12 +153,11 @@ export default function RootLayout({ children }) {
       <body className="bg-white dark:bg-black">
         <ThemeProvider>
           <Inicializador />
-          <AnalyticsTracker />
+          <ClientHydrators />
           <Navbar />
           {children}
-          <SpeedInsights />
+          {process.env.NODE_ENV !== 'production' && <SpeedInsights />}
           <Analytics />
-          <BotonWhatsapp />
         </ThemeProvider>
       </body>
     </html>
